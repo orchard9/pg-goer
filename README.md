@@ -25,6 +25,8 @@ PG Go ER generates a markdown report containing:
 - Table statistics (row counts, last activity)
 - Mermaid ER diagram
 
+📄 **[View Sample Output](example-output.md)** - See what the generated documentation looks like
+
 ## Installation
 
 ### From Source

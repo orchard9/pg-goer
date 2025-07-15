@@ -5,10 +5,21 @@ MAIN_PACKAGE=./cmd/pg-goer
 GO=go
 GOLANGCI_LINT=golangci-lint
 
+# Version information
+VERSION ?= $(shell git describe --tags --always --dirty)
+COMMIT := $(shell git rev-parse HEAD)
+BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(BUILD_DATE)
+
 # Build the binary
 .PHONY: build
 build:
 	$(GO) build -o $(BINARY_NAME) $(MAIN_PACKAGE)
+
+# Build the binary with version information
+.PHONY: build-release
+build-release:
+	$(GO) build -ldflags="$(LDFLAGS)" -o $(BINARY_NAME) $(MAIN_PACKAGE)
 
 # Run CI checks (tests + linting)
 .PHONY: ci
@@ -95,3 +106,97 @@ test-all: test integration
 # Clean all test artifacts
 .PHONY: clean-all
 clean-all: clean uat-clean integration-clean
+
+# Release targets
+# ===============
+
+# Cross-platform build targets
+.PHONY: build-linux-amd64
+build-linux-amd64:
+	GOOS=linux GOARCH=amd64 $(GO) build -ldflags="$(LDFLAGS)" -o $(BINARY_NAME)-linux-amd64 $(MAIN_PACKAGE)
+
+.PHONY: build-linux-arm64
+build-linux-arm64:
+	GOOS=linux GOARCH=arm64 $(GO) build -ldflags="$(LDFLAGS)" -o $(BINARY_NAME)-linux-arm64 $(MAIN_PACKAGE)
+
+.PHONY: build-darwin-amd64
+build-darwin-amd64:
+	GOOS=darwin GOARCH=amd64 $(GO) build -ldflags="$(LDFLAGS)" -o $(BINARY_NAME)-darwin-amd64 $(MAIN_PACKAGE)
+
+.PHONY: build-darwin-arm64
+build-darwin-arm64:
+	GOOS=darwin GOARCH=arm64 $(GO) build -ldflags="$(LDFLAGS)" -o $(BINARY_NAME)-darwin-arm64 $(MAIN_PACKAGE)
+
+.PHONY: build-windows-amd64
+build-windows-amd64:
+	GOOS=windows GOARCH=amd64 $(GO) build -ldflags="$(LDFLAGS)" -o $(BINARY_NAME)-windows-amd64.exe $(MAIN_PACKAGE)
+
+# Build all platforms
+.PHONY: build-all
+build-all: build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64 build-windows-amd64
+
+# Create release archives
+.PHONY: package
+package: build-all
+	@echo "Creating release packages..."
+	@mkdir -p dist
+	@# Linux amd64
+	@tar -czf dist/$(BINARY_NAME)-$(VERSION)-linux-amd64.tar.gz $(BINARY_NAME)-linux-amd64
+	@# Linux arm64
+	@tar -czf dist/$(BINARY_NAME)-$(VERSION)-linux-arm64.tar.gz $(BINARY_NAME)-linux-arm64
+	@# macOS amd64
+	@tar -czf dist/$(BINARY_NAME)-$(VERSION)-darwin-amd64.tar.gz $(BINARY_NAME)-darwin-amd64
+	@# macOS arm64
+	@tar -czf dist/$(BINARY_NAME)-$(VERSION)-darwin-arm64.tar.gz $(BINARY_NAME)-darwin-arm64
+	@# Windows amd64
+	@zip dist/$(BINARY_NAME)-$(VERSION)-windows-amd64.zip $(BINARY_NAME)-windows-amd64.exe
+	@echo "Release packages created in dist/"
+
+# Full release preparation
+.PHONY: release-prep
+release-prep: clean ci build-all package
+	@echo "Release preparation complete!"
+	@echo "Version: $(VERSION)"
+	@echo "Commit: $(COMMIT)"
+	@echo "Build Date: $(BUILD_DATE)"
+	@echo ""
+	@echo "Release artifacts:"
+	@ls -la dist/
+
+# Clean release artifacts
+.PHONY: clean-release
+clean-release:
+	rm -f $(BINARY_NAME)-*
+	rm -rf dist/
+
+# Create a new release tag
+.PHONY: tag
+tag:
+	@if [ -z "$(TAG)" ]; then echo "Usage: make tag TAG=v1.0.0"; exit 1; fi
+	@git tag -a $(TAG) -m "Release $(TAG)"
+	@echo "Created tag $(TAG)"
+	@echo "Push with: git push origin $(TAG)"
+
+# Show version information
+.PHONY: version
+version:
+	@echo "Version: $(VERSION)"
+	@echo "Commit: $(COMMIT)"
+	@echo "Build Date: $(BUILD_DATE)"
+
+# Validate CI configuration locally
+.PHONY: validate-ci
+validate-ci:
+	@./scripts/validate-ci.sh
+
+# Complete release workflow
+.PHONY: release
+release: release-prep
+	@echo ""
+	@echo "🎉 Release $(VERSION) is ready!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "1. Review the release artifacts in dist/"
+	@echo "2. Create a git tag: make tag TAG=v$(VERSION)"
+	@echo "3. Push the tag: git push origin v$(VERSION)"
+	@echo "4. GitHub Actions will automatically create the release"

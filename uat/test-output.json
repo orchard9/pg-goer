@@ -1,0 +1,342 @@
+{
+  "generated_at": "2025-07-14T21:58:32-06:00",
+  "database_name": "Database Documentation",
+  "summary": {
+    "table_count": 5,
+    "total_rows": 47
+  },
+  "tables": [
+    {
+      "name": "categories",
+      "schema": "public",
+      "row_count": 6,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "integer",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_unique": false,
+          "default_value": "nextval('categories_id_seq'::regclass)"
+        },
+        {
+          "name": "name",
+          "data_type": "character varying",
+          "max_length": 100,
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": true
+        },
+        {
+          "name": "description",
+          "data_type": "text",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "parent_id",
+          "data_type": "integer",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "name": "categories_parent_id_fkey",
+          "source_table": "categories",
+          "source_column": "parent_id",
+          "referenced_table": "public.categories",
+          "referenced_column": "id"
+        }
+      ]
+    },
+    {
+      "name": "order_items",
+      "schema": "public",
+      "row_count": 13,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "integer",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_unique": false,
+          "default_value": "nextval('order_items_id_seq'::regclass)"
+        },
+        {
+          "name": "order_id",
+          "data_type": "integer",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "product_name",
+          "data_type": "character varying",
+          "max_length": 255,
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "quantity",
+          "data_type": "integer",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "1"
+        },
+        {
+          "name": "unit_price",
+          "data_type": "numeric",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "total_price",
+          "data_type": "numeric",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "name": "order_items_order_id_fkey",
+          "source_table": "order_items",
+          "source_column": "order_id",
+          "referenced_table": "public.orders",
+          "referenced_column": "id"
+        }
+      ]
+    },
+    {
+      "name": "orders",
+      "schema": "public",
+      "row_count": 10,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "integer",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_unique": false,
+          "default_value": "nextval('orders_id_seq'::regclass)"
+        },
+        {
+          "name": "user_id",
+          "data_type": "integer",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "total",
+          "data_type": "numeric",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "0.00"
+        },
+        {
+          "name": "order_date",
+          "data_type": "timestamp without time zone",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "status",
+          "data_type": "character varying",
+          "max_length": 20,
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "'pending'::character varying"
+        },
+        {
+          "name": "shipping_address",
+          "data_type": "text",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "notes",
+          "data_type": "text",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "name": "orders_user_id_fkey",
+          "source_table": "orders",
+          "source_column": "user_id",
+          "referenced_table": "public.users",
+          "referenced_column": "id"
+        }
+      ]
+    },
+    {
+      "name": "products",
+      "schema": "public",
+      "row_count": 8,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "integer",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_unique": false,
+          "default_value": "nextval('products_id_seq'::regclass)"
+        },
+        {
+          "name": "name",
+          "data_type": "character varying",
+          "max_length": 255,
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "description",
+          "data_type": "text",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "price",
+          "data_type": "numeric",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "category_id",
+          "data_type": "integer",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "in_stock",
+          "data_type": "boolean",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "true"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp without time zone",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "name": "products_category_id_fkey",
+          "source_table": "products",
+          "source_column": "category_id",
+          "referenced_table": "public.categories",
+          "referenced_column": "id"
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "schema": "public",
+      "row_count": 10,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "integer",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_unique": false,
+          "default_value": "nextval('users_id_seq'::regclass)"
+        },
+        {
+          "name": "email",
+          "data_type": "character varying",
+          "max_length": 255,
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": true
+        },
+        {
+          "name": "first_name",
+          "data_type": "character varying",
+          "max_length": 100,
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "last_name",
+          "data_type": "character varying",
+          "max_length": 100,
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp without time zone",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "status",
+          "data_type": "character varying",
+          "max_length": 20,
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "'active'::character varying"
+        },
+        {
+          "name": "is_verified",
+          "data_type": "boolean",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "false"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "parent_table": "categories",
+      "child_table": "categories",
+      "foreign_key": "parent_id"
+    },
+    {
+      "parent_table": "orders",
+      "child_table": "order_items",
+      "foreign_key": "order_id"
+    },
+    {
+      "parent_table": "users",
+      "child_table": "orders",
+      "foreign_key": "user_id"
+    },
+    {
+      "parent_table": "categories",
+      "child_table": "products",
+      "foreign_key": "category_id"
+    }
+  ]
+}
