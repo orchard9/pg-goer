@@ -115,7 +115,7 @@ jobs:
           ./cmd/pg-goer
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pg-goer-${{ matrix.goos }}-${{ matrix.goarch }}
         path: pg-goer-*
