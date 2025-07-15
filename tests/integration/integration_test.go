@@ -77,11 +77,13 @@ func TestSchemaAnalysis(t *testing.T) {
 	}
 
 	expectedTables := map[string]bool{
-		"users":          true,
-		"posts":          true,
-		"comments":       true,
-		"categories":     true,
-		"post_categories": true,
+		"users":                    true,
+		"posts":                    true,
+		"comments":                 true,
+		"categories":               true,
+		"post_categories":          true,
+		"magic_code_rate_limits":   true,
+		"test_multiple_uniques":    true,
 	}
 
 	if len(tables) != len(expectedTables) {
