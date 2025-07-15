@@ -286,13 +286,16 @@ func TestCompleteWorkflow(t *testing.T) {
 
 	// Create schema model
 	schema := models.Schema{
-		Name:   "Integration Test Database",
-		Tables: tables,
+		Name:       "Integration Test Database",
+		Tables:     tables,
+		Views:      []models.View{},
+		Sequences:  []models.Sequence{},
+		Extensions: []models.Extension{},
 	}
 
 	// Generate markdown documentation
 	markdownReporter := reporter.NewMarkdownReporter()
-	documentation, err := markdownReporter.Generate(schema)
+	documentation, err := markdownReporter.Generate(&schema)
 	if err != nil {
 		t.Fatalf("Failed to generate documentation: %v", err)
 	}

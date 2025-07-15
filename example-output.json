@@ -1,11 +1,97 @@
 {
-  "generated_at": "2025-07-14T22:42:32-06:00",
+  "generated_at": "2025-07-14T22:53:56-06:00",
   "database_name": "Database Documentation",
   "summary": {
-    "table_count": 5,
+    "table_count": 6,
     "total_rows": 47
   },
+  "extensions": [
+    {
+      "name": "pg_stat_statements",
+      "version": "1.10",
+      "schema": "public"
+    },
+    {
+      "name": "uuid-ossp",
+      "version": "1.1",
+      "schema": "public"
+    }
+  ],
   "tables": [
+    {
+      "name": "audit_log",
+      "schema": "public",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "integer",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_unique": false,
+          "default_value": "nextval('audit_log_id_seq'::regclass)"
+        },
+        {
+          "name": "table_name",
+          "data_type": "character varying",
+          "max_length": 50,
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "operation",
+          "data_type": "character varying",
+          "max_length": 10,
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "user_name",
+          "data_type": "character varying",
+          "max_length": 100,
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "CURRENT_USER"
+        },
+        {
+          "name": "timestamp",
+          "data_type": "timestamp without time zone",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false,
+          "default_value": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "old_values",
+          "data_type": "jsonb",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false
+        },
+        {
+          "name": "new_values",
+          "data_type": "jsonb",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_unique": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "audit_log_pkey",
+          "type": "PRIMARY KEY",
+          "is_primary": true,
+          "is_unique": true,
+          "columns": [
+            "id"
+          ],
+          "method": "btree"
+        }
+      ]
+    },
     {
       "name": "categories",
       "schema": "public",
@@ -248,6 +334,16 @@
           "method": "btree"
         },
         {
+          "name": "idx_orders_total_range",
+          "type": "INDEX",
+          "is_primary": false,
+          "is_unique": false,
+          "columns": [
+            "total"
+          ],
+          "method": "btree"
+        },
+        {
           "name": "idx_orders_user_id",
           "type": "INDEX",
           "is_primary": false,
@@ -256,6 +352,22 @@
             "user_id"
           ],
           "method": "btree"
+        }
+      ],
+      "triggers": [
+        {
+          "name": "order_validation_trigger",
+          "event": "INSERT,UPDATE",
+          "timing": "BEFORE",
+          "function": "validate_order",
+          "orientation": "ROW"
+        },
+        {
+          "name": "orders_audit_trigger",
+          "event": "INSERT,DELETE,UPDATE",
+          "timing": "AFTER",
+          "function": "audit_trigger",
+          "orientation": "ROW"
         }
       ]
     },
@@ -345,6 +457,16 @@
           "is_unique": false,
           "columns": [
             "category_id"
+          ],
+          "method": "btree"
+        },
+        {
+          "name": "idx_products_price_btree",
+          "type": "INDEX",
+          "is_primary": false,
+          "is_unique": false,
+          "columns": [
+            "price"
           ],
           "method": "btree"
         }
@@ -443,6 +565,26 @@
             "email"
           ],
           "method": "btree"
+        },
+        {
+          "name": "idx_users_status_verified",
+          "type": "INDEX",
+          "is_primary": false,
+          "is_unique": false,
+          "columns": [
+            "status",
+            "is_verified"
+          ],
+          "method": "btree"
+        }
+      ],
+      "triggers": [
+        {
+          "name": "users_audit_trigger",
+          "event": "INSERT,DELETE,UPDATE",
+          "timing": "AFTER",
+          "function": "audit_trigger",
+          "orientation": "ROW"
         }
       ]
     }

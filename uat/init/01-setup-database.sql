@@ -123,3 +123,117 @@ CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_date ON orders(order_date);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_products_category_id ON products(category_id);
+
+-- Enable useful PostgreSQL extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
+
+-- Create audit table for demonstration
+CREATE TABLE audit_log (
+    id SERIAL PRIMARY KEY,
+    table_name VARCHAR(50) NOT NULL,
+    operation VARCHAR(10) NOT NULL,
+    user_name VARCHAR(100) DEFAULT current_user,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    old_values JSONB,
+    new_values JSONB
+);
+
+-- Create trigger function for auditing
+CREATE OR REPLACE FUNCTION audit_trigger()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        INSERT INTO audit_log (table_name, operation, old_values)
+        VALUES (TG_TABLE_NAME, TG_OP, row_to_json(OLD));
+        RETURN OLD;
+    ELSIF TG_OP = 'UPDATE' THEN
+        INSERT INTO audit_log (table_name, operation, old_values, new_values)
+        VALUES (TG_TABLE_NAME, TG_OP, row_to_json(OLD), row_to_json(NEW));
+        RETURN NEW;
+    ELSIF TG_OP = 'INSERT' THEN
+        INSERT INTO audit_log (table_name, operation, new_values)
+        VALUES (TG_TABLE_NAME, TG_OP, row_to_json(NEW));
+        RETURN NEW;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create audit triggers
+CREATE TRIGGER users_audit_trigger
+    AFTER INSERT OR UPDATE OR DELETE ON users
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger();
+
+CREATE TRIGGER orders_audit_trigger
+    AFTER INSERT OR UPDATE OR DELETE ON orders
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger();
+
+-- Create views for demonstration
+CREATE VIEW active_users AS
+SELECT 
+    id,
+    email,
+    first_name || ' ' || last_name AS full_name,
+    created_at,
+    is_verified
+FROM users 
+WHERE status = 'active';
+
+CREATE VIEW order_summary AS
+SELECT 
+    o.id,
+    u.email,
+    o.total,
+    o.status,
+    o.order_date,
+    COUNT(oi.id) as item_count
+FROM orders o
+JOIN users u ON o.user_id = u.id
+LEFT JOIN order_items oi ON o.id = oi.order_id
+GROUP BY o.id, u.email, o.total, o.status, o.order_date;
+
+-- Create some additional indexes with different types
+CREATE INDEX CONCURRENTLY idx_users_status_verified ON users(status, is_verified);
+CREATE INDEX idx_products_price_btree ON products USING btree(price);
+CREATE INDEX idx_orders_total_range ON orders(total) WHERE total > 100;
+
+-- Create a function for demonstration
+CREATE OR REPLACE FUNCTION get_user_order_count(user_email VARCHAR)
+RETURNS INTEGER AS $$
+DECLARE
+    order_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO order_count
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    WHERE u.email = user_email;
+    
+    RETURN order_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create a more complex trigger for order validation
+CREATE OR REPLACE FUNCTION validate_order()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Ensure order total is positive
+    IF NEW.total <= 0 THEN
+        RAISE EXCEPTION 'Order total must be positive, got %', NEW.total;
+    END IF;
+    
+    -- Ensure user exists and is active
+    IF NOT EXISTS (
+        SELECT 1 FROM users 
+        WHERE id = NEW.user_id AND status = 'active'
+    ) THEN
+        RAISE EXCEPTION 'Cannot create order for inactive or non-existent user %', NEW.user_id;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER order_validation_trigger
+    BEFORE INSERT OR UPDATE ON orders
+    FOR EACH ROW EXECUTE FUNCTION validate_order();

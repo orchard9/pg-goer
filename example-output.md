@@ -1,13 +1,16 @@
 # PostgreSQL Database Documentation
 
-Generated on: 2025-07-14 22:42:32
+Generated on: 2025-07-14 22:53:56
 
 ## Table of Contents
 
 - [Database Summary](#database-summary)
+- [PostgreSQL Extensions](#postgresql-extensions)
+- [Views](#views)
 - [Sequences](#sequences)
 - [Database Relationships](#database-relationships)
 - [Tables](#tables)
+  - [audit_log](#audit-log)
   - [categories](#categories)
   - [order_items](#order-items)
   - [orders](#orders)
@@ -16,13 +19,30 @@ Generated on: 2025-07-14 22:42:32
 
 ## Database Summary
 
-**Total Tables:** 5
+**Total Tables:** 6
 **Total Rows:** 47
+
+## PostgreSQL Extensions
+
+| Extension | Version | Schema |
+|-----------|---------|--------|
+| pg_stat_statements | 1.10 | public |
+| uuid-ossp | 1.1 | public |
+
+## Views
+
+| View | Schema |
+|------|--------|
+| active_users | public |
+| order_summary | public |
+| pg_stat_statements | public |
+| pg_stat_statements_info | public |
 
 ## Sequences
 
 | Sequence | Schema | Data Type | Start | Min | Max | Increment |
 |----------|--------|-----------|-------|-----|-----|----------|
+| audit_log_id_seq | public | integer | 1 | 1 | 2147483647 | 1 |
 | categories_id_seq | public | integer | 1 | 1 | 2147483647 | 1 |
 | order_items_id_seq | public | integer | 1 | 1 | 2147483647 | 1 |
 | orders_id_seq | public | integer | 1 | 1 | 2147483647 | 1 |
@@ -38,6 +58,15 @@ erDiagram
     users ||--o{ orders : "user_id"
     categories ||--o{ products : "category_id"
 
+    audit_log {
+        integer id PK
+        varchar table_name
+        varchar operation
+        varchar user_name
+        timestamp timestamp
+        jsonb old_values
+        jsonb new_values
+    }
     categories {
         integer id PK
         varchar name UK
@@ -82,6 +111,30 @@ erDiagram
 ```
 
 ## Tables
+
+## audit_log
+
+<a id="audit-log"></a>
+
+### Columns
+
+| Column | Type | Nullable | Constraints | Default |
+|--------|------|----------|-------------|---------|
+| id | integer | NO | PRIMARY KEY | nextval('audit_log_id_seq'::regclass) |
+| table_name | character varying(50) | NO |  |  |
+| operation | character varying(10) | NO |  |  |
+| user_name | character varying(100) | YES |  | CURRENT_USER |
+| timestamp | timestamp without time zone | YES |  | CURRENT_TIMESTAMP |
+| old_values | jsonb | YES |  |  |
+| new_values | jsonb | YES |  |  |
+
+### Indexes
+
+| Name | Type | Columns | Method |
+|------|------|---------|--------|
+| audit_log_pkey | PRIMARY KEY | id | btree |
+
+---
 
 ## categories
 
@@ -157,7 +210,15 @@ Row Count: 10
 |------|------|---------|--------|
 | orders_pkey | PRIMARY KEY | id | btree |
 | idx_orders_date | INDEX | order_date | btree |
+| idx_orders_total_range | INDEX | total | btree |
 | idx_orders_user_id | INDEX | user_id | btree |
+
+### Triggers
+
+| Name | Event | Timing | Function | Orientation |
+|------|-------|--------|----------|-------------|
+| order_validation_trigger | INSERT,UPDATE | BEFORE | validate_order | ROW |
+| orders_audit_trigger | INSERT,DELETE,UPDATE | AFTER | audit_trigger | ROW |
 
 ---
 
@@ -185,6 +246,7 @@ Row Count: 8
 |------|------|---------|--------|
 | products_pkey | PRIMARY KEY | id | btree |
 | idx_products_category_id | INDEX | category_id | btree |
+| idx_products_price_btree | INDEX | price | btree |
 
 ---
 
@@ -213,3 +275,10 @@ Row Count: 10
 | users_pkey | PRIMARY KEY | id | btree |
 | users_email_key | UNIQUE | email | btree |
 | idx_users_email | INDEX | email | btree |
+| idx_users_status_verified | INDEX | status, is_verified | btree |
+
+### Triggers
+
+| Name | Event | Timing | Function | Orientation |
+|------|-------|--------|----------|-------------|
+| users_audit_trigger | INSERT,DELETE,UPDATE | AFTER | audit_trigger | ROW |
