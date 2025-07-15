@@ -135,3 +135,7 @@ Achieved: Real-world example demonstrating tool's ability to document complex Po
 ### 39. Fix remaining integration test compilation error with schema pointer ✓
 Resolved final GitHub Actions test failures by fixing Schema struct initialization in integration tests.
 Achieved: All GitHub Actions checks passing with proper Schema field initialization.
+
+### 28. Fix duplicate unique constraint handling (Issue #6) ✓
+Fixed GetColumns query to use EXISTS instead of COALESCE subquery to handle duplicate unique constraints.
+Achieved: Tables with multiple unique constraints on same column now process without errors, maintaining production database compatibility.
