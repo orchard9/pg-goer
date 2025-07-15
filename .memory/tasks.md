@@ -22,6 +22,22 @@ Critical to ensure CI pipeline works before depending on it for quality gates.
 Add make release target for creating versioned binaries.
 Automates the release process for consistency.
 
+### 22. Document indexes - all database indexes including primary keys, unique constraints, and custom indexes
+Extend schema analysis to include all database indexes for comprehensive documentation.
+Provides complete visibility into database performance optimization and constraints.
+
+### 23. Document triggers - all database triggers including their events, timing, and function references
+Add trigger analysis to capture database automation and business logic.
+Essential for understanding database behavior and data integrity mechanisms.
+
+### 24. Document PostgreSQL extensions - installed extensions and their versions
+Include extension information to document database capabilities and dependencies.
+Critical for deployment and compatibility management.
+
+### 25. Document additional PostgreSQL objects - views, sequences, functions, procedures, and custom types
+Complete the schema analysis with remaining PostgreSQL object types.
+Ensures comprehensive database documentation covering all schema elements.
+
 ### 21. Build and test final binary
 Final validation of the complete tool with all features.
 Ensure single binary works as designed with no dependencies.

@@ -16,6 +16,9 @@ The project maintains five memory files in the `.memory/` directory:
 4. **vision.md**: Defines the stable long-term vision for the project
 5. **tasks.md**: Lists all tasks with 1-3 lines describing what each task is and why it's important
 
+### Task Management
+When the user mentions "create tasks", "edit tasks", or "update tasks", they refer to modifying `.memory/tasks.md`. This is the authoritative task list for the project, not any temporary todo tracking systems.
+
 ## How to Handle Coding Task Requests
 
 ### 0. Gather Requirements
@@ -78,7 +81,7 @@ After completing the task:
 - Update working-memory.md with completed work
 - Add new facts to semantic-memory.md if applicable
 - Ensure vision.md remains accurate
-- Update tasks.md: mark task as completed, move it to the bottom, and add notes about:
+- Update `.memory/tasks.md`: mark task as completed, move it to the bottom, and add notes about:
   - How it was implemented
   - What could be improved
   - Any concerns or regressions to watch for
@@ -136,7 +139,7 @@ After fixing the bug:
 - Update working-memory.md with the bug fix details
 - Add lessons learned to semantic-memory.md
 - Note any architectural improvements made
-- Update tasks.md with prevention measures if needed
+- Update `.memory/tasks.md` with prevention measures if needed
 
 ## Handling "check gh" Command
 
@@ -145,14 +148,14 @@ When the user says "check gh", perform these actions:
 1. **Check GitHub Issues**
    - Use `gh issue list` to see open issues
    - Look for bug reports, feature requests, or questions
-   - Add any actionable items to tasks.md
+   - Add any actionable items to `.memory/tasks.md`
 
 2. **Check GitHub Actions**
    - Use `gh run list` to see recent workflow runs
    - Look for failed builds or tests
-   - Investigate any failures and add fixes to tasks.md
+   - Investigate any failures and add fixes to `.memory/tasks.md`
 
 3. **Update Task List**
-   - Add new tasks for any issues found
+   - Add new tasks for any issues found to `.memory/tasks.md`
    - Prioritize based on severity (build failures = high priority)
    - Include issue/run numbers in task descriptions for tracking
