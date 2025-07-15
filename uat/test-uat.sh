@@ -38,7 +38,7 @@ warning() {
 cleanup() {
     log "Cleaning up..."
     cd "$UAT_DIR"
-    docker-compose down -v --remove-orphans 2>/dev/null || true
+    docker compose down -v --remove-orphans 2>/dev/null || true
     rm -f "$OUTPUT_FILE"
     cd "$PROJECT_ROOT"
     rm -f "$BINARY_NAME"
@@ -86,7 +86,7 @@ main() {
     cd "$UAT_DIR"
     log "Starting PostgreSQL test database..."
     
-    if ! docker-compose up -d; then
+    if ! docker compose up -d; then
         error "Failed to start Docker services"
         exit 1
     fi
@@ -97,7 +97,7 @@ main() {
     attempt=0
     
     while [[ $attempt -lt $max_attempts ]]; do
-        if docker-compose exec -T postgres pg_isready -U testuser -d testdb >/dev/null 2>&1; then
+        if docker compose exec -T postgres pg_isready -U testuser -d testdb >/dev/null 2>&1; then
             break
         fi
         

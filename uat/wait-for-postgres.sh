@@ -35,11 +35,11 @@ main() {
         log "Connection attempt $attempt/$MAX_ATTEMPTS"
         
         # Check if Docker container is healthy
-        if docker-compose exec -T postgres pg_isready -U testuser -d testdb >/dev/null 2>&1; then
+        if docker compose exec -T postgres pg_isready -U testuser -d testdb >/dev/null 2>&1; then
             success "PostgreSQL container is healthy"
             
             # Additional check: try to connect with our tool's connection logic
-            if timeout 5 docker-compose exec -T postgres psql -U testuser -d testdb -c "SELECT 1;" >/dev/null 2>&1; then
+            if timeout 5 docker compose exec -T postgres psql -U testuser -d testdb -c "SELECT 1;" >/dev/null 2>&1; then
                 success "PostgreSQL is ready for connections"
                 success "Database startup completed in $((attempt * RETRY_INTERVAL)) seconds"
                 return 0
