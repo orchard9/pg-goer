@@ -27,7 +27,7 @@ func Connect(ctx context.Context, connectionString string) (*Connection, error) 
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
