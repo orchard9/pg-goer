@@ -1,7 +1,7 @@
 # pg-goer Makefile
 
 BINARY_NAME=pg-goer
-MAIN_PACKAGE=./cmd/pg-goer
+MAIN_PACKAGE=.
 GO=go
 GOLANGCI_LINT=golangci-lint
 

@@ -352,13 +352,13 @@ func TestCompleteWorkflow(t *testing.T) {
 // Helper functions
 
 func startDockerCompose() error {
-	cmd := exec.Command("docker-compose", "-f", dockerComposeFile, "up", "-d")
+	cmd := exec.Command("docker", "compose", "-f", dockerComposeFile, "up", "-d")
 	cmd.Dir = getIntegrationDir()
 	return cmd.Run()
 }
 
 func stopDockerCompose() {
-	cmd := exec.Command("docker-compose", "-f", dockerComposeFile, "down", "-v", "--remove-orphans")
+	cmd := exec.Command("docker", "compose", "-f", dockerComposeFile, "down", "-v", "--remove-orphans")
 	cmd.Dir = getIntegrationDir()
 	cmd.Run() // Ignore errors during cleanup
 }
