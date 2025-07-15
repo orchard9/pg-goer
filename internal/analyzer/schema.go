@@ -57,17 +57,16 @@ func (a *SchemaAnalyzer) GetColumns(ctx context.Context, table *models.Table) ([
 				   AND kcu.column_name = c.column_name
 				), false
 			) AS is_primary_key,
-			COALESCE(
-				(SELECT true 
-				 FROM information_schema.table_constraints tc
-				 JOIN information_schema.key_column_usage kcu 
-				   ON tc.constraint_name = kcu.constraint_name 
-				   AND tc.table_schema = kcu.table_schema
-				 WHERE tc.constraint_type = 'UNIQUE' 
-				   AND tc.table_schema = c.table_schema 
-				   AND tc.table_name = c.table_name 
-				   AND kcu.column_name = c.column_name
-				), false
+			EXISTS (
+				SELECT 1
+				FROM information_schema.table_constraints tc
+				JOIN information_schema.key_column_usage kcu 
+				  ON tc.constraint_name = kcu.constraint_name 
+				  AND tc.table_schema = kcu.table_schema
+				WHERE tc.constraint_type = 'UNIQUE' 
+				  AND tc.table_schema = c.table_schema 
+				  AND tc.table_name = c.table_name 
+				  AND kcu.column_name = c.column_name
 			) AS is_unique
 		FROM 
 			information_schema.columns c
