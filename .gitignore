@@ -1,5 +1,5 @@
 # Binaries
-pg-goer
+/pg-goer
 *.exe
 *.dll
 *.so
