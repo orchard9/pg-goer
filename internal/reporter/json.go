@@ -19,6 +19,7 @@ type JSONOutput struct {
 	GeneratedAt   string             `json:"generated_at"`
 	DatabaseName  string             `json:"database_name"`
 	Summary       DatabaseSummary    `json:"summary"`
+	Extensions    []JSONExtension    `json:"extensions,omitempty"`
 	Tables        []JSONTable        `json:"tables"`
 	Relationships []JSONRelationship `json:"relationships,omitempty"`
 }
@@ -34,6 +35,8 @@ type JSONTable struct {
 	RowCount    int64            `json:"row_count"`
 	Columns     []JSONColumn     `json:"columns"`
 	ForeignKeys []JSONForeignKey `json:"foreign_keys,omitempty"`
+	Indexes     []JSONIndex      `json:"indexes,omitempty"`
+	Triggers    []JSONTrigger    `json:"triggers,omitempty"`
 }
 
 type JSONColumn struct {
@@ -54,6 +57,29 @@ type JSONForeignKey struct {
 	ReferencedColumn string `json:"referenced_column"`
 }
 
+type JSONIndex struct {
+	Name      string   `json:"name"`
+	Type      string   `json:"type"`
+	IsPrimary bool     `json:"is_primary"`
+	IsUnique  bool     `json:"is_unique"`
+	Columns   []string `json:"columns"`
+	Method    string   `json:"method"`
+}
+
+type JSONTrigger struct {
+	Name        string `json:"name"`
+	Event       string `json:"event"`
+	Timing      string `json:"timing"`
+	Function    string `json:"function"`
+	Orientation string `json:"orientation"`
+}
+
+type JSONExtension struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Schema  string `json:"schema"`
+}
+
 type JSONRelationship struct {
 	ParentTable string `json:"parent_table"`
 	ChildTable  string `json:"child_table"`
@@ -65,6 +91,7 @@ func (r *JSONReporter) Generate(schema models.Schema) (string, error) {
 		GeneratedAt:   time.Now().Format(time.RFC3339),
 		DatabaseName:  schema.Name,
 		Summary:       r.buildSummary(schema.Tables),
+		Extensions:    r.buildExtensions(schema.Extensions),
 		Tables:        r.buildTables(schema.Tables),
 		Relationships: r.buildRelationships(schema.Tables),
 	}
@@ -79,8 +106,8 @@ func (r *JSONReporter) Generate(schema models.Schema) (string, error) {
 
 func (r *JSONReporter) buildSummary(tables []models.Table) DatabaseSummary {
 	var totalRows int64
-	for _, table := range tables {
-		totalRows += table.RowCount
+	for i := range tables {
+		totalRows += tables[i].RowCount
 	}
 
 	return DatabaseSummary{
@@ -92,13 +119,16 @@ func (r *JSONReporter) buildSummary(tables []models.Table) DatabaseSummary {
 func (r *JSONReporter) buildTables(tables []models.Table) []JSONTable {
 	jsonTables := make([]JSONTable, len(tables))
 
-	for i, table := range tables {
+	for i := range tables {
+		table := &tables[i]
 		jsonTables[i] = JSONTable{
 			Name:        table.Name,
 			Schema:      table.Schema,
 			RowCount:    table.RowCount,
 			Columns:     r.buildColumns(table.Columns),
 			ForeignKeys: r.buildForeignKeys(table.ForeignKeys),
+			Indexes:     r.buildIndexes(table.Indexes),
+			Triggers:    r.buildTriggers(table.Triggers),
 		}
 	}
 
@@ -143,11 +173,70 @@ func (r *JSONReporter) buildForeignKeys(foreignKeys []models.ForeignKey) []JSONF
 	return jsonForeignKeys
 }
 
+func (r *JSONReporter) buildIndexes(indexes []models.Index) []JSONIndex {
+	if len(indexes) == 0 {
+		return nil
+	}
+
+	jsonIndexes := make([]JSONIndex, len(indexes))
+
+	for i, idx := range indexes {
+		jsonIndexes[i] = JSONIndex{
+			Name:      idx.Name,
+			Type:      idx.Type,
+			IsPrimary: idx.IsPrimary,
+			IsUnique:  idx.IsUnique,
+			Columns:   idx.Columns,
+			Method:    idx.Method,
+		}
+	}
+
+	return jsonIndexes
+}
+
+func (r *JSONReporter) buildTriggers(triggers []models.Trigger) []JSONTrigger {
+	if len(triggers) == 0 {
+		return nil
+	}
+
+	jsonTriggers := make([]JSONTrigger, len(triggers))
+
+	for i, trigger := range triggers {
+		jsonTriggers[i] = JSONTrigger{
+			Name:        trigger.Name,
+			Event:       trigger.Event,
+			Timing:      trigger.Timing,
+			Function:    trigger.Function,
+			Orientation: trigger.Orientation,
+		}
+	}
+
+	return jsonTriggers
+}
+
+func (r *JSONReporter) buildExtensions(extensions []models.Extension) []JSONExtension {
+	if len(extensions) == 0 {
+		return nil
+	}
+
+	jsonExtensions := make([]JSONExtension, len(extensions))
+
+	for i, ext := range extensions {
+		jsonExtensions[i] = JSONExtension{
+			Name:    ext.Name,
+			Version: ext.Version,
+			Schema:  ext.Schema,
+		}
+	}
+
+	return jsonExtensions
+}
+
 func (r *JSONReporter) buildRelationships(tables []models.Table) []JSONRelationship {
 	var relationships []JSONRelationship
 
-	for _, table := range tables {
-		for _, fk := range table.ForeignKeys {
+	for i := range tables {
+		for _, fk := range tables[i].ForeignKeys {
 			// Extract referenced table name (remove schema prefix if present)
 			referencedTable := fk.ReferencedTable
 			if referencedTable != "" && referencedTable[0] != '"' {
@@ -159,7 +248,7 @@ func (r *JSONReporter) buildRelationships(tables []models.Table) []JSONRelations
 
 			relationships = append(relationships, JSONRelationship{
 				ParentTable: referencedTable,
-				ChildTable:  table.Name,
+				ChildTable:  tables[i].Name,
 				ForeignKey:  fk.SourceColumn,
 			})
 		}

@@ -1,7 +1,7 @@
 # Code Architecture
 
 ## Overview
-PG Go ER follows a clean architecture pattern with clear separation of concerns.
+PG GoER follows a clean architecture pattern with clear separation of concerns.
 
 ## Core Components
 

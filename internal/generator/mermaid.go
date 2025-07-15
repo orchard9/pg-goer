@@ -29,8 +29,8 @@ func (g *MermaidGenerator) GenerateER(schema models.Schema) (string, error) {
 	}
 
 	// Generate table definitions
-	for _, table := range schema.Tables {
-		g.writeTableDefinition(&sb, &table)
+	for i := range schema.Tables {
+		g.writeTableDefinition(&sb, &schema.Tables[i])
 	}
 
 	return sb.String(), nil
@@ -45,8 +45,8 @@ type relationship struct {
 func (g *MermaidGenerator) extractRelationships(tables []models.Table) []relationship {
 	var relationships []relationship
 
-	for _, table := range tables {
-		for _, fk := range table.ForeignKeys {
+	for i := range tables {
+		for _, fk := range tables[i].ForeignKeys {
 			// Extract referenced table name (remove schema prefix if present)
 			referencedTable := fk.ReferencedTable
 			if strings.Contains(referencedTable, ".") {
@@ -56,7 +56,7 @@ func (g *MermaidGenerator) extractRelationships(tables []models.Table) []relatio
 
 			relationships = append(relationships, relationship{
 				ParentTable: referencedTable,
-				ChildTable:  table.Name,
+				ChildTable:  tables[i].Name,
 				ForeignKey:  fk.SourceColumn,
 			})
 		}

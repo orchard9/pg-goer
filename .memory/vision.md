@@ -1,7 +1,7 @@
 # Project Vision
 
 ## Core Vision
-PG Go ER aims to be the simplest, most reliable PostgreSQL documentation generator that developers actually use.
+PG GoER aims to be the simplest, most reliable PostgreSQL documentation generator that developers actually use.
 
 ## Design Principles
 1. **Zero Friction**: Single command execution with sensible defaults

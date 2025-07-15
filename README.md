@@ -1,4 +1,4 @@
-# PG Go ER
+# PG GoER
 
 Automatically generate comprehensive PostgreSQL database documentation including ER diagrams, table statistics, and schema definitions.
 
@@ -18,7 +18,7 @@ pg-goer "postgresql://localhost/mydb"
 ```
 
 ## Output Example
-PG Go ER generates a markdown report containing:
+PG GoER generates a markdown report containing:
 - Database overview
 - Table definitions with columns and types
 - Foreign key relationships
@@ -49,7 +49,7 @@ go install github.com/orchard9/pg-goer@latest
 - [Usage Guide](usage.md)
 - [Architecture](code_architecture.md)
 - [Contributing](contributing.md)
-- [Why PG Go ER?](why.md)
+- [Why PG GoER?](why.md)
 
 ## License
 MIT License. See [LICENSE.md](LICENSE.md) for details.

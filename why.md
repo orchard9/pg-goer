@@ -1,10 +1,10 @@
-# Why PG Go ER?
+# Why PG GoER?
 
 ## The Problem
 Database documentation is often outdated, incomplete, or non-existent. Developers waste time reverse-engineering schemas and relationships. Existing tools require complex dependencies or manual processes.
 
 ## The Solution
-PG Go ER automatically generates comprehensive database documentation by analyzing your PostgreSQL database structure in real-time. One command, zero dependencies, instant documentation.
+PG GoER automatically generates comprehensive database documentation by analyzing your PostgreSQL database structure in real-time. One command, zero dependencies, instant documentation.
 
 ## Key Benefits
 - **Single Binary**: No Java, Python, or Node.js required
@@ -46,4 +46,4 @@ PG Go ER automatically generates comprehensive database documentation by analyzi
 - No markdown output
 
 ## Our Philosophy
-PG Go ER does one thing exceptionally well: generate PostgreSQL documentation. No bloat, no complex configurations, no heavy dependencies. Just a fast, reliable tool that fits seamlessly into modern development workflows.
+PG GoER does one thing exceptionally well: generate PostgreSQL documentation. No bloat, no complex configurations, no heavy dependencies. Just a fast, reliable tool that fits seamlessly into modern development workflows.

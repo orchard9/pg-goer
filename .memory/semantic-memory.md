@@ -1,7 +1,7 @@
 # Semantic Memory
 
 ## Project Facts
-- PG Go ER is a PostgreSQL database documentation generator
+- PG GoER is a PostgreSQL database documentation generator
 - The project is written in Go 1.21+
 - It generates markdown documentation with ER diagrams
 - The tool uses Mermaid syntax for diagram generation

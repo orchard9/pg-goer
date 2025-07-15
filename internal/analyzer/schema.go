@@ -249,7 +249,8 @@ func (a *SchemaAnalyzer) GetTableRowCounts(ctx context.Context, tables []models.
 	tableNames := make([]string, 0, len(tables))
 	tableMap := make(map[string]string) // qualified name -> simple name
 
-	for _, table := range tables {
+	for i := range tables {
+		table := &tables[i]
 		qualifiedName := fmt.Sprintf("%s.%s", table.Schema, table.Name)
 		tableNames = append(tableNames, qualifiedName)
 		tableMap[qualifiedName] = table.Name
@@ -292,4 +293,313 @@ func (a *SchemaAnalyzer) GetTableRowCounts(ctx context.Context, tables []models.
 	}
 
 	return rowCounts, nil
+}
+
+func (a *SchemaAnalyzer) GetIndexes(ctx context.Context, table *models.Table) ([]models.Index, error) {
+	query := `
+		SELECT DISTINCT
+			i.relname AS index_name,
+			CASE 
+				WHEN ic.indisprimary THEN 'PRIMARY KEY'
+				WHEN ic.indisunique THEN 'UNIQUE'
+				ELSE 'INDEX'
+			END AS index_type,
+			ic.indisprimary AS is_primary,
+			ic.indisunique AS is_unique,
+			am.amname AS access_method,
+			array_agg(a.attname ORDER BY ic.indkey) AS columns
+		FROM 
+			pg_catalog.pg_index ic
+		JOIN 
+			pg_catalog.pg_class i ON i.oid = ic.indexrelid
+		JOIN 
+			pg_catalog.pg_class t ON t.oid = ic.indrelid
+		JOIN 
+			pg_catalog.pg_namespace n ON n.oid = t.relnamespace
+		JOIN 
+			pg_catalog.pg_am am ON am.oid = i.relam
+		JOIN 
+			pg_catalog.pg_attribute a ON a.attrelid = t.oid 
+				AND a.attnum = ANY(ic.indkey)
+		WHERE 
+			n.nspname = $1
+			AND t.relname = $2
+			AND t.relkind = 'r'
+		GROUP BY 
+			i.relname, ic.indisprimary, ic.indisunique, am.amname
+		ORDER BY 
+			ic.indisprimary DESC, ic.indisunique DESC, i.relname`
+
+	rows, err := a.conn.db.QueryContext(ctx, query, table.Schema, table.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query indexes: %w", err)
+	}
+	defer rows.Close()
+
+	var indexes []models.Index
+
+	for rows.Next() {
+		var (
+			idx     models.Index
+			columns string
+		)
+
+		if err := rows.Scan(
+			&idx.Name,
+			&idx.Type,
+			&idx.IsPrimary,
+			&idx.IsUnique,
+			&idx.Method,
+			&columns,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan index row: %w", err)
+		}
+
+		// Parse the PostgreSQL array format {col1,col2}
+		columns = strings.Trim(columns, "{}")
+		if columns != "" {
+			idx.Columns = strings.Split(columns, ",")
+		}
+
+		indexes = append(indexes, idx)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating index rows: %w", err)
+	}
+
+	return indexes, nil
+}
+
+func (a *SchemaAnalyzer) GetTriggers(ctx context.Context, table *models.Table) ([]models.Trigger, error) {
+	query := `
+		SELECT 
+			t.tgname AS trigger_name,
+			CASE t.tgtype & cast(2 as int2)
+				WHEN 0 THEN 'AFTER'
+				ELSE 'BEFORE'
+			END AS timing,
+			CASE t.tgtype & cast(28 as int2)
+				WHEN 4 THEN 'INSERT'
+				WHEN 8 THEN 'DELETE'
+				WHEN 16 THEN 'UPDATE'
+				WHEN 12 THEN 'INSERT,DELETE'
+				WHEN 20 THEN 'INSERT,UPDATE'
+				WHEN 24 THEN 'DELETE,UPDATE'
+				WHEN 28 THEN 'INSERT,DELETE,UPDATE'
+			END AS event,
+			p.proname AS function_name,
+			CASE t.tgtype & cast(1 as int2)
+				WHEN 0 THEN 'STATEMENT'
+				ELSE 'ROW'
+			END AS orientation
+		FROM 
+			pg_catalog.pg_trigger t
+		JOIN 
+			pg_catalog.pg_class c ON c.oid = t.tgrelid
+		JOIN 
+			pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+		JOIN 
+			pg_catalog.pg_proc p ON p.oid = t.tgfoid
+		WHERE 
+			n.nspname = $1
+			AND c.relname = $2
+			AND NOT t.tgisinternal
+		ORDER BY 
+			t.tgname`
+
+	rows, err := a.conn.db.QueryContext(ctx, query, table.Schema, table.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query triggers: %w", err)
+	}
+	defer rows.Close()
+
+	var triggers []models.Trigger
+
+	for rows.Next() {
+		var trigger models.Trigger
+
+		if err := rows.Scan(
+			&trigger.Name,
+			&trigger.Timing,
+			&trigger.Event,
+			&trigger.Function,
+			&trigger.Orientation,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan trigger row: %w", err)
+		}
+
+		triggers = append(triggers, trigger)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating trigger rows: %w", err)
+	}
+
+	return triggers, nil
+}
+
+func (a *SchemaAnalyzer) GetExtensions(ctx context.Context) ([]models.Extension, error) {
+	query := `
+		SELECT 
+			e.extname AS extension_name,
+			e.extversion AS extension_version,
+			n.nspname AS schema_name
+		FROM 
+			pg_catalog.pg_extension e
+		JOIN 
+			pg_catalog.pg_namespace n ON n.oid = e.extnamespace
+		WHERE 
+			e.extname NOT IN ('plpgsql')  -- Exclude built-in extensions
+		ORDER BY 
+			e.extname`
+
+	rows, err := a.conn.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query extensions: %w", err)
+	}
+	defer rows.Close()
+
+	var extensions []models.Extension
+
+	for rows.Next() {
+		var ext models.Extension
+
+		if err := rows.Scan(&ext.Name, &ext.Version, &ext.Schema); err != nil {
+			return nil, fmt.Errorf("failed to scan extension row: %w", err)
+		}
+
+		extensions = append(extensions, ext)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating extension rows: %w", err)
+	}
+
+	return extensions, nil
+}
+
+func (a *SchemaAnalyzer) GetViews(ctx context.Context, schemas []string) ([]models.View, error) {
+	query := a.buildViewQuery(schemas)
+	args := make([]interface{}, len(schemas))
+
+	for i, schema := range schemas {
+		args[i] = schema
+	}
+
+	rows, err := a.conn.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query views: %w", err)
+	}
+	defer rows.Close()
+
+	var views []models.View
+
+	for rows.Next() {
+		var view models.View
+		if err := rows.Scan(&view.Schema, &view.Name); err != nil {
+			return nil, fmt.Errorf("failed to scan view row: %w", err)
+		}
+
+		views = append(views, view)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating view rows: %w", err)
+	}
+
+	return views, nil
+}
+
+func (a *SchemaAnalyzer) buildViewQuery(schemas []string) string {
+	baseQuery := `
+		SELECT 
+			schemaname AS schema_name,
+			viewname AS view_name
+		FROM 
+			pg_catalog.pg_views
+		WHERE `
+
+	if len(schemas) == 0 {
+		return baseQuery + `schemaname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+		ORDER BY schemaname, viewname`
+	}
+
+	if len(schemas) == 1 {
+		return baseQuery + `schemaname = $1
+		ORDER BY schemaname, viewname`
+	}
+
+	placeholders := make([]string, len(schemas))
+	for i := range schemas {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	return baseQuery + fmt.Sprintf(`schemaname IN (%s)
+		ORDER BY schemaname, viewname`, strings.Join(placeholders, ", "))
+}
+
+func (a *SchemaAnalyzer) GetSequences(ctx context.Context, schemas []string) ([]models.Sequence, error) {
+	query := a.buildSequenceQuery(schemas)
+	args := make([]interface{}, len(schemas))
+
+	for i, schema := range schemas {
+		args[i] = schema
+	}
+
+	rows, err := a.conn.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query sequences: %w", err)
+	}
+	defer rows.Close()
+
+	var sequences []models.Sequence
+
+	for rows.Next() {
+		var seq models.Sequence
+		if err := rows.Scan(&seq.Schema, &seq.Name, &seq.DataType, &seq.StartValue, &seq.MinValue, &seq.MaxValue, &seq.Increment); err != nil {
+			return nil, fmt.Errorf("failed to scan sequence row: %w", err)
+		}
+
+		sequences = append(sequences, seq)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating sequence rows: %w", err)
+	}
+
+	return sequences, nil
+}
+
+func (a *SchemaAnalyzer) buildSequenceQuery(schemas []string) string {
+	baseQuery := `
+		SELECT 
+			schemaname AS schema_name,
+			sequencename AS sequence_name,
+			data_type,
+			start_value,
+			min_value,
+			max_value,
+			increment_by
+		FROM 
+			pg_catalog.pg_sequences
+		WHERE `
+
+	if len(schemas) == 0 {
+		return baseQuery + `schemaname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+		ORDER BY schemaname, sequencename`
+	}
+
+	if len(schemas) == 1 {
+		return baseQuery + `schemaname = $1
+		ORDER BY schemaname, sequencename`
+	}
+
+	placeholders := make([]string, len(schemas))
+	for i := range schemas {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	return baseQuery + fmt.Sprintf(`schemaname IN (%s)
+		ORDER BY schemaname, sequencename`, strings.Join(placeholders, ", "))
 }
