@@ -1,10 +1,11 @@
 # PostgreSQL Database Documentation
 
-Generated on: 2025-07-14 21:50:16
+Generated on: 2025-07-14 22:42:32
 
 ## Table of Contents
 
 - [Database Summary](#database-summary)
+- [Sequences](#sequences)
 - [Database Relationships](#database-relationships)
 - [Tables](#tables)
   - [categories](#categories)
@@ -17,6 +18,16 @@ Generated on: 2025-07-14 21:50:16
 
 **Total Tables:** 5
 **Total Rows:** 47
+
+## Sequences
+
+| Sequence | Schema | Data Type | Start | Min | Max | Increment |
+|----------|--------|-----------|-------|-----|-----|----------|
+| categories_id_seq | public | integer | 1 | 1 | 2147483647 | 1 |
+| order_items_id_seq | public | integer | 1 | 1 | 2147483647 | 1 |
+| orders_id_seq | public | integer | 1 | 1 | 2147483647 | 1 |
+| products_id_seq | public | integer | 1 | 1 | 2147483647 | 1 |
+| users_id_seq | public | integer | 1 | 1 | 2147483647 | 1 |
 
 ## Database Relationships
 
@@ -87,6 +98,13 @@ Row Count: 6
 | description | text | YES |  |  |
 | parent_id | integer | YES |  |  |
 
+### Indexes
+
+| Name | Type | Columns | Method |
+|------|------|---------|--------|
+| categories_pkey | PRIMARY KEY | id | btree |
+| categories_name_key | UNIQUE | name | btree |
+
 ---
 
 ## order_items
@@ -105,6 +123,13 @@ Row Count: 13
 | quantity | integer | NO |  | 1 |
 | unit_price | numeric | NO |  |  |
 | total_price | numeric | YES |  |  |
+
+### Indexes
+
+| Name | Type | Columns | Method |
+|------|------|---------|--------|
+| order_items_pkey | PRIMARY KEY | id | btree |
+| idx_order_items_order_id | INDEX | order_id | btree |
 
 ---
 
@@ -126,6 +151,14 @@ Row Count: 10
 | shipping_address | text | YES |  |  |
 | notes | text | YES |  |  |
 
+### Indexes
+
+| Name | Type | Columns | Method |
+|------|------|---------|--------|
+| orders_pkey | PRIMARY KEY | id | btree |
+| idx_orders_date | INDEX | order_date | btree |
+| idx_orders_user_id | INDEX | user_id | btree |
+
 ---
 
 ## products
@@ -146,6 +179,13 @@ Row Count: 8
 | in_stock | boolean | YES |  | true |
 | created_at | timestamp without time zone | YES |  | CURRENT_TIMESTAMP |
 
+### Indexes
+
+| Name | Type | Columns | Method |
+|------|------|---------|--------|
+| products_pkey | PRIMARY KEY | id | btree |
+| idx_products_category_id | INDEX | category_id | btree |
+
 ---
 
 ## users
@@ -165,3 +205,11 @@ Row Count: 10
 | created_at | timestamp without time zone | YES |  | CURRENT_TIMESTAMP |
 | status | character varying(20) | YES |  | 'active'::character varying |
 | is_verified | boolean | YES |  | false |
+
+### Indexes
+
+| Name | Type | Columns | Method |
+|------|------|---------|--------|
+| users_pkey | PRIMARY KEY | id | btree |
+| users_email_key | UNIQUE | email | btree |
+| idx_users_email | INDEX | email | btree |

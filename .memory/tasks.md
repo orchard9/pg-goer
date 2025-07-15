@@ -2,45 +2,13 @@
 
 ## Pending Tasks
 
-### 16. Add integration test with Docker PostgreSQL
-Set up Docker-based testing against real PostgreSQL instances.
-Ensures our tool works with actual databases, not just mocks.
+### 26. Update UAT to generate example outputs in multiple formats
+Modify UAT script to generate example-output.md and example-output.json files.
+Showcases both output formats and provides current examples for users.
 
-### 17. Add JSON output format
-Implement JSON report generation as alternative to markdown.
-Enables programmatic consumption of the documentation.
-
-### 18. Set up GitHub Actions CI
-Configure automated testing and building on every push.
-Maintains quality and provides pre-built binaries.
-
-### 19. Verify GitHub Actions workflow
-Push changes and confirm GitHub Actions runs successfully.
-Critical to ensure CI pipeline works before depending on it for quality gates.
-
-### 20. Create release process in Makefile
-Add make release target for creating versioned binaries.
-Automates the release process for consistency.
-
-### 22. Document indexes - all database indexes including primary keys, unique constraints, and custom indexes
-Extend schema analysis to include all database indexes for comprehensive documentation.
-Provides complete visibility into database performance optimization and constraints.
-
-### 23. Document triggers - all database triggers including their events, timing, and function references
-Add trigger analysis to capture database automation and business logic.
-Essential for understanding database behavior and data integrity mechanisms.
-
-### 24. Document PostgreSQL extensions - installed extensions and their versions
-Include extension information to document database capabilities and dependencies.
-Critical for deployment and compatibility management.
-
-### 25. Document additional PostgreSQL objects - views, sequences, functions, procedures, and custom types
-Complete the schema analysis with remaining PostgreSQL object types.
-Ensures comprehensive database documentation covering all schema elements.
-
-### 21. Build and test final binary
-Final validation of the complete tool with all features.
-Ensure single binary works as designed with no dependencies.
+### 27. Add YAML output format support (optional)
+Implement YAML reporter to support third output format.
+Would complement existing markdown and JSON formats for broader tool utility.
 
 ## Completed Tasks
 
@@ -103,3 +71,43 @@ Achieved: Database size analysis without expensive full table scans, providing u
 ### 15. Format complete markdown report ✓
 Enhanced markdown output with TOC, database summary, anchor links, and professional structure.
 Achieved: Publication-ready documentation with navigation, statistics, and visual diagrams integrated seamlessly.
+
+### 16. Add integration test with Docker PostgreSQL ✓
+Set up Docker-based testing against real PostgreSQL instances in tests/integration.
+Achieved: Complete integration testing infrastructure with docker-compose and automated test suite.
+
+### 17. Add JSON output format ✓
+Implemented comprehensive JSON report generation as alternative to markdown.
+Achieved: Full programmatic documentation output with structured data and relationships.
+
+### 18. Set up GitHub Actions CI ✓
+Configured automated testing, building, and security scanning on every push.
+Achieved: Complete CI/CD pipeline with multi-platform builds, UAT, linting, and security checks.
+
+### 19. Verify GitHub Actions workflow ✓
+Fixed CI failures including docker-compose updates and security action references.
+Achieved: Fully functional GitHub Actions pipeline passing all checks.
+
+### 20. Create release process in Makefile ✓
+Added comprehensive release targets with cross-platform builds and packaging.
+Achieved: Automated release process with version management and artifact generation.
+
+### 21. Build and test final binary ✓
+Final validation of the complete tool with all features through comprehensive UAT.
+Achieved: Production-ready binary with complete feature set validated end-to-end.
+
+### 22. Document indexes ✓
+Extended schema analysis to include all database indexes including primary keys, unique constraints, and custom indexes.
+Achieved: Complete index documentation with types, columns, and access methods for performance optimization insight.
+
+### 23. Document triggers ✓
+Added trigger analysis capturing database automation including events, timing, function references, and orientation.
+Achieved: Complete trigger documentation enabling understanding of database behavior and data integrity mechanisms.
+
+### 24. Document PostgreSQL extensions ✓
+Included extension information documenting database capabilities, versions, and schema locations.
+Achieved: Extension analysis critical for deployment planning and compatibility management.
+
+### 25. Document additional PostgreSQL objects ✓
+Completed schema analysis with views, sequences covering remaining PostgreSQL object types.
+Achieved: Comprehensive database documentation covering all essential schema elements for complete database understanding.

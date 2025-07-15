@@ -80,17 +80,17 @@ func TestBuildTableQuery(t *testing.T) {
 		{
 			name:     "single schema",
 			schemas:  []string{"public"},
-			expected: "n.nspname = $1",
+			expected: "AND n.nspname = $1",
 		},
 		{
 			name:     "multiple schemas",
 			schemas:  []string{"public", "custom"},
-			expected: "n.nspname IN ($1, $2)",
+			expected: "AND n.nspname IN ($1, $2)",
 		},
 		{
 			name:     "empty schemas",
 			schemas:  []string{},
-			expected: "NOT n.nspname IN ('pg_catalog', 'information_schema', 'pg_toast')",
+			expected: "AND NOT n.nspname IN ('pg_catalog', 'information_schema', 'pg_toast')",
 		},
 	}
 

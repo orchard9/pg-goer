@@ -445,7 +445,7 @@ func (a *SchemaAnalyzer) GetViews(ctx context.Context, schemas []string) ([]mode
 
 func (a *SchemaAnalyzer) buildViewQuery(schemas []string) string {
 	return a.buildSchemaFilterQuery(
-		`SELECT schemaname AS schema_name, viewname AS view_name FROM pg_catalog.pg_views`,
+		`SELECT schemaname AS schema_name, viewname AS view_name FROM pg_catalog.pg_views WHERE true`,
 		"schemaname",
 		"schemaname, viewname",
 		schemas,
@@ -517,7 +517,7 @@ func querySchemaObjects[T any](ctx context.Context, db *sql.DB, query string, sc
 }
 
 func (a *SchemaAnalyzer) buildSchemaFilterQuery(baseQuery, schemaColumn, orderBy string, schemas []string) string {
-	whereClause := " WHERE "
+	whereClause := " AND "
 
 	switch len(schemas) {
 	case 0:
@@ -538,7 +538,7 @@ func (a *SchemaAnalyzer) buildSchemaFilterQuery(baseQuery, schemaColumn, orderBy
 
 func (a *SchemaAnalyzer) buildSequenceQuery(schemas []string) string {
 	return a.buildSchemaFilterQuery(
-		`SELECT schemaname AS schema_name, sequencename AS sequence_name, data_type, start_value, min_value, max_value, increment_by FROM pg_catalog.pg_sequences`,
+		`SELECT schemaname AS schema_name, sequencename AS sequence_name, data_type, start_value, min_value, max_value, increment_by FROM pg_catalog.pg_sequences WHERE true`,
 		"schemaname",
 		"schemaname, sequencename",
 		schemas,

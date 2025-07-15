@@ -183,6 +183,53 @@ main() {
     
     success "Schema filtering works correctly"
     
+    # Generate example output files for the project
+    log "Generating example output files for project documentation..."
+    
+    cd "$PROJECT_ROOT"
+    
+    # Generate example markdown output
+    if ! ./"$BINARY_NAME" -o "example-output.md" "$CONNECTION_STRING"; then
+        error "Failed to generate example markdown output"
+        return 1
+    fi
+    
+    if [[ ! -f "example-output.md" ]]; then
+        error "Example markdown output file not created"
+        return 1
+    fi
+    
+    success "Generated example-output.md"
+    
+    # Generate example JSON output
+    if ! ./"$BINARY_NAME" -format json -o "example-output.json" "$CONNECTION_STRING"; then
+        error "Failed to generate example JSON output"
+        return 1
+    fi
+    
+    if [[ ! -f "example-output.json" ]]; then
+        error "Example JSON output file not created"
+        return 1
+    fi
+    
+    success "Generated example-output.json"
+    
+    # Validate JSON format
+    if command -v jq >/dev/null 2>&1; then
+        if ! jq . "example-output.json" >/dev/null 2>&1; then
+            error "Generated JSON is not valid"
+            return 1
+        fi
+        success "JSON output is valid"
+    else
+        warning "jq not available, skipping JSON validation"
+    fi
+    
+    # Show file sizes
+    md_size=$(wc -c < "example-output.md")
+    json_size=$(wc -c < "example-output.json")
+    log "Example file sizes: markdown=$md_size bytes, json=$json_size bytes"
+    
     # Validate the generated documentation shows proper structure
     log "Final validation of documentation structure..."
     
@@ -206,6 +253,7 @@ main() {
     success "✓ Row counts included"
     success "✓ Schema filtering functional"
     success "✓ Output file structure validated"
+    success "✓ Example output files generated"
     echo
     success "🎉 All UAT tests passed! pg-goer is working correctly."
     

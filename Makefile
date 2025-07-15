@@ -66,7 +66,7 @@ vet:
 .PHONY: uat-up
 uat-up: build
 	@echo "Starting UAT PostgreSQL database..."
-	cd uat && docker-compose up -d
+	cd uat && docker compose up -d
 	cd uat && ./wait-for-postgres.sh
 
 # UAT: Run tests against database
@@ -78,8 +78,9 @@ uat-run:
 .PHONY: uat-down
 uat-down:
 	@echo "Stopping UAT database and cleaning up..."
-	cd uat && docker-compose down -v --remove-orphans 2>/dev/null || true
+	cd uat && docker compose down -v --remove-orphans 2>/dev/null || true
 	rm -f uat/uat-test-output.md uat/schema-filtered-output.md
+	@echo "Preserving example output files: example-output.md, example-output.json"
 
 # UAT: Complete cycle (up + run + down)
 .PHONY: uat
@@ -97,7 +98,7 @@ integration:
 # Clean integration test artifacts
 .PHONY: integration-clean
 integration-clean:
-	cd tests/integration && docker-compose down -v --remove-orphans 2>/dev/null || true
+	cd tests/integration && docker compose down -v --remove-orphans 2>/dev/null || true
 
 # Run all tests (unit + integration)
 .PHONY: test-all
