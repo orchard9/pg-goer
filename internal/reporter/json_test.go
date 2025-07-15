@@ -104,7 +104,7 @@ func TestJSONReporter_Generate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reporter := NewJSONReporter()
-			output, err := reporter.Generate(tt.schema)
+			output, err := reporter.Generate(&tt.schema)
 
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -131,12 +131,12 @@ func TestJSONReporter_Generate(t *testing.T) {
 			}
 
 			// Verify JSON structure more deeply
-			validateJSONStructure(t, jsonData, tt.schema)
+			validateJSONStructure(t, jsonData, &tt.schema)
 		})
 	}
 }
 
-func validateJSONStructure(t *testing.T, jsonData map[string]interface{}, schema models.Schema) {
+func validateJSONStructure(t *testing.T, jsonData map[string]interface{}, schema *models.Schema) {
 	t.Helper()
 
 	// Check summary
@@ -208,7 +208,7 @@ func TestJSONReporter_EmptySchema(t *testing.T) {
 		Tables: []models.Table{},
 	}
 
-	output, err := reporter.Generate(schema)
+	output, err := reporter.Generate(&schema)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

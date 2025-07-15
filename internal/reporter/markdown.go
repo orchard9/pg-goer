@@ -15,7 +15,7 @@ func NewMarkdownReporter() *MarkdownReporter {
 	return &MarkdownReporter{}
 }
 
-func (r *MarkdownReporter) Generate(schema models.Schema) (string, error) {
+func (r *MarkdownReporter) Generate(schema *models.Schema) (string, error) {
 	var sb strings.Builder
 
 	sb.WriteString("# PostgreSQL Database Documentation\n\n")

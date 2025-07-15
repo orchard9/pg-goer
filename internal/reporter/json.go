@@ -86,7 +86,7 @@ type JSONRelationship struct {
 	ForeignKey  string `json:"foreign_key"`
 }
 
-func (r *JSONReporter) Generate(schema models.Schema) (string, error) {
+func (r *JSONReporter) Generate(schema *models.Schema) (string, error) {
 	output := JSONOutput{
 		GeneratedAt:   time.Now().Format(time.RFC3339),
 		DatabaseName:  schema.Name,

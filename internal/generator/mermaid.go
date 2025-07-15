@@ -13,7 +13,7 @@ func NewMermaidGenerator() *MermaidGenerator {
 	return &MermaidGenerator{}
 }
 
-func (g *MermaidGenerator) GenerateER(schema models.Schema) (string, error) {
+func (g *MermaidGenerator) GenerateER(schema *models.Schema) (string, error) {
 	var sb strings.Builder
 
 	sb.WriteString("erDiagram\n")

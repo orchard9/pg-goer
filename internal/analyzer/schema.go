@@ -19,66 +19,22 @@ func NewSchemaAnalyzer(conn *Connection) *SchemaAnalyzer {
 
 func (a *SchemaAnalyzer) GetTables(ctx context.Context, schemas []string) ([]models.Table, error) {
 	query := a.buildTableQuery(schemas)
-	args := make([]interface{}, len(schemas))
 
-	for i, schema := range schemas {
-		args[i] = schema
-	}
-
-	rows, err := a.conn.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query tables: %w", err)
-	}
-	defer rows.Close()
-
-	var tables []models.Table
-
-	for rows.Next() {
-		var table models.Table
-		if err := rows.Scan(&table.Schema, &table.Name); err != nil {
-			return nil, fmt.Errorf("failed to scan table row: %w", err)
-		}
-
-		tables = append(tables, table)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating table rows: %w", err)
-	}
-
-	return tables, nil
+	return querySchemaObjects(ctx, a.conn.db, query, schemas, func() models.Table { return models.Table{} },
+		func(item *models.Table) []interface{} { return []interface{}{&item.Schema, &item.Name} },
+		"tables")
 }
 
 func (a *SchemaAnalyzer) buildTableQuery(schemas []string) string {
-	baseQuery := `
-		SELECT 
-			n.nspname AS schema_name,
-			c.relname AS table_name
-		FROM 
-			pg_catalog.pg_class c
-		INNER JOIN 
-			pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-		WHERE 
-			c.relkind = 'r'
-			AND `
-
-	if len(schemas) == 0 {
-		return baseQuery + `NOT n.nspname IN ('pg_catalog', 'information_schema', 'pg_toast')
-		ORDER BY n.nspname, c.relname`
-	}
-
-	if len(schemas) == 1 {
-		return baseQuery + `n.nspname = $1
-		ORDER BY n.nspname, c.relname`
-	}
-
-	placeholders := make([]string, len(schemas))
-	for i := range schemas {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-	}
-
-	return baseQuery + fmt.Sprintf(`n.nspname IN (%s)
-		ORDER BY n.nspname, c.relname`, strings.Join(placeholders, ", "))
+	return a.buildSchemaFilterQuery(
+		`SELECT n.nspname AS schema_name, c.relname AS table_name 
+		 FROM pg_catalog.pg_class c 
+		 INNER JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace 
+		 WHERE c.relkind = 'r'`,
+		"n.nspname",
+		"n.nspname, c.relname",
+		schemas,
+	)
 }
 
 func (a *SchemaAnalyzer) GetColumns(ctx context.Context, table *models.Table) ([]models.Column, error) {
@@ -481,62 +437,19 @@ func (a *SchemaAnalyzer) GetExtensions(ctx context.Context) ([]models.Extension,
 
 func (a *SchemaAnalyzer) GetViews(ctx context.Context, schemas []string) ([]models.View, error) {
 	query := a.buildViewQuery(schemas)
-	args := make([]interface{}, len(schemas))
 
-	for i, schema := range schemas {
-		args[i] = schema
-	}
-
-	rows, err := a.conn.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query views: %w", err)
-	}
-	defer rows.Close()
-
-	var views []models.View
-
-	for rows.Next() {
-		var view models.View
-		if err := rows.Scan(&view.Schema, &view.Name); err != nil {
-			return nil, fmt.Errorf("failed to scan view row: %w", err)
-		}
-
-		views = append(views, view)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating view rows: %w", err)
-	}
-
-	return views, nil
+	return querySchemaObjects(ctx, a.conn.db, query, schemas, func() models.View { return models.View{} },
+		func(item *models.View) []interface{} { return []interface{}{&item.Schema, &item.Name} },
+		"views")
 }
 
 func (a *SchemaAnalyzer) buildViewQuery(schemas []string) string {
-	baseQuery := `
-		SELECT 
-			schemaname AS schema_name,
-			viewname AS view_name
-		FROM 
-			pg_catalog.pg_views
-		WHERE `
-
-	if len(schemas) == 0 {
-		return baseQuery + `schemaname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
-		ORDER BY schemaname, viewname`
-	}
-
-	if len(schemas) == 1 {
-		return baseQuery + `schemaname = $1
-		ORDER BY schemaname, viewname`
-	}
-
-	placeholders := make([]string, len(schemas))
-	for i := range schemas {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-	}
-
-	return baseQuery + fmt.Sprintf(`schemaname IN (%s)
-		ORDER BY schemaname, viewname`, strings.Join(placeholders, ", "))
+	return a.buildSchemaFilterQuery(
+		`SELECT schemaname AS schema_name, viewname AS view_name FROM pg_catalog.pg_views`,
+		"schemaname",
+		"schemaname, viewname",
+		schemas,
+	)
 }
 
 func (a *SchemaAnalyzer) GetSequences(ctx context.Context, schemas []string) ([]models.Sequence, error) {
@@ -571,35 +484,63 @@ func (a *SchemaAnalyzer) GetSequences(ctx context.Context, schemas []string) ([]
 	return sequences, nil
 }
 
+func querySchemaObjects[T any](ctx context.Context, db *sql.DB, query string, schemas []string,
+	newItem func() T, scanFields func(*T) []interface{}, objectType string) ([]T, error) {
+	args := make([]interface{}, len(schemas))
+	for i, schema := range schemas {
+		args[i] = schema
+	}
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query %s: %w", objectType, err)
+	}
+	defer rows.Close()
+
+	var items []T
+
+	for rows.Next() {
+		item := newItem()
+
+		if err := rows.Scan(scanFields(&item)...); err != nil {
+			return nil, fmt.Errorf("failed to scan %s row: %w", objectType, err)
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating %s rows: %w", objectType, err)
+	}
+
+	return items, nil
+}
+
+func (a *SchemaAnalyzer) buildSchemaFilterQuery(baseQuery, schemaColumn, orderBy string, schemas []string) string {
+	whereClause := " WHERE "
+
+	switch len(schemas) {
+	case 0:
+		whereClause += fmt.Sprintf("NOT %s IN ('pg_catalog', 'information_schema', 'pg_toast')", schemaColumn)
+	case 1:
+		whereClause += fmt.Sprintf("%s = $1", schemaColumn)
+	default:
+		placeholders := make([]string, len(schemas))
+		for i := range schemas {
+			placeholders[i] = fmt.Sprintf("$%d", i+1)
+		}
+
+		whereClause += fmt.Sprintf("%s IN (%s)", schemaColumn, strings.Join(placeholders, ", "))
+	}
+
+	return baseQuery + whereClause + fmt.Sprintf(" ORDER BY %s", orderBy)
+}
+
 func (a *SchemaAnalyzer) buildSequenceQuery(schemas []string) string {
-	baseQuery := `
-		SELECT 
-			schemaname AS schema_name,
-			sequencename AS sequence_name,
-			data_type,
-			start_value,
-			min_value,
-			max_value,
-			increment_by
-		FROM 
-			pg_catalog.pg_sequences
-		WHERE `
-
-	if len(schemas) == 0 {
-		return baseQuery + `schemaname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
-		ORDER BY schemaname, sequencename`
-	}
-
-	if len(schemas) == 1 {
-		return baseQuery + `schemaname = $1
-		ORDER BY schemaname, sequencename`
-	}
-
-	placeholders := make([]string, len(schemas))
-	for i := range schemas {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-	}
-
-	return baseQuery + fmt.Sprintf(`schemaname IN (%s)
-		ORDER BY schemaname, sequencename`, strings.Join(placeholders, ", "))
+	return a.buildSchemaFilterQuery(
+		`SELECT schemaname AS schema_name, sequencename AS sequence_name, data_type, start_value, min_value, max_value, increment_by FROM pg_catalog.pg_sequences`,
+		"schemaname",
+		"schemaname, sequencename",
+		schemas,
+	)
 }
