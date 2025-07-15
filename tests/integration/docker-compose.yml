@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: pg-goer-integration-test
+    environment:
+      POSTGRES_DB: integration_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5556:5432"
+    volumes:
+      - ./testdata:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d integration_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    tmpfs:
+      - /var/lib/postgresql/data
+    command: >
+      postgres 
+      -c log_statement=all
+      -c log_destination=stderr
+      -c log_min_messages=info
+
+networks:
+  default:
+    name: pg-goer-integration-network

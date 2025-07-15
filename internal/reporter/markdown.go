@@ -148,7 +148,7 @@ func (r *MarkdownReporter) writeTableOfContents(sb *strings.Builder, tables []mo
 
 	for _, table := range tables {
 		anchorName := strings.ToLower(strings.ReplaceAll(table.Name, "_", "-"))
-		sb.WriteString(fmt.Sprintf("  - [%s](#%s)\n", table.Name, anchorName))
+		fmt.Fprintf(sb, "  - [%s](#%s)\n", table.Name, anchorName)
 	}
 
 	sb.WriteString("\n")
@@ -158,16 +158,17 @@ func (r *MarkdownReporter) writeDatabaseSummary(sb *strings.Builder, tables []mo
 	sb.WriteString("## Database Summary\n\n")
 
 	tableCount := len(tables)
+
 	var totalRows int64
 
 	for _, table := range tables {
 		totalRows += table.RowCount
 	}
 
-	sb.WriteString(fmt.Sprintf("**Total Tables:** %d\n", tableCount))
+	fmt.Fprintf(sb, "**Total Tables:** %d\n", tableCount)
 
 	if totalRows > 0 {
-		sb.WriteString(fmt.Sprintf("**Total Rows:** %d\n", totalRows))
+		fmt.Fprintf(sb, "**Total Rows:** %d\n", totalRows)
 	}
 
 	sb.WriteString("\n")

@@ -83,6 +83,61 @@ After completing the task:
   - What could be improved
   - Any concerns or regressions to watch for
 
+## How to Handle Bug Reports
+
+Written by world class golang engineers that pride elegant efficiency and delivering a focused product.
+
+### 0. Understand the Bug
+Ask questions until you have 100% confidence in understanding:
+- Exact symptoms and error messages
+- Steps to reproduce the issue
+- Expected vs actual behavior
+- Environmental context (OS, version, data, etc.)
+
+### 1. Reproduce the Failure
+- Create a minimal test case that demonstrates the bug
+- Write a failing test that captures the exact issue
+- Ensure the test fails for the right reasons
+- Document the reproduction steps clearly
+
+### 2. Identify Root Cause
+- Trace the code path that leads to the failure
+- Understand why our existing tests didn't catch this
+- Identify the specific logic or assumption that's incorrect
+- Consider related areas that might have similar issues
+
+### 3. Fix with Test-First Approach
+- Start with the failing test from step 1
+- Implement the minimal fix that makes the test pass
+- Ensure the fix doesn't break existing functionality
+- Follow our coding principles: reliable, elegant, efficient
+
+### 4. Improve Test Coverage
+Critical step - prevent regression:
+- Add comprehensive tests that would have caught this bug
+- Test edge cases and boundary conditions
+- Add validation that catches similar issues
+- Ensure tests fail meaningfully when broken
+
+### 5. Validate the Fix
+- Run `make ci` to ensure all tests pass
+- Run `make uat` to validate real-world scenarios
+- Test the specific reproduction case from step 0
+- Verify related functionality wasn't impacted
+
+### 6. Update Documentation
+- Update code comments if the bug revealed unclear logic
+- Add examples or warnings for edge cases
+- Update user documentation if behavior changed
+- Document the fix approach for future reference
+
+### 7. Update Memory
+After fixing the bug:
+- Update working-memory.md with the bug fix details
+- Add lessons learned to semantic-memory.md
+- Note any architectural improvements made
+- Update tasks.md with prevention measures if needed
+
 ## Handling "check gh" Command
 
 When the user says "check gh", perform these actions:

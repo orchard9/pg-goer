@@ -31,7 +31,6 @@ func (g *MermaidGenerator) GenerateER(schema models.Schema) (string, error) {
 	// Generate table definitions
 	for _, table := range schema.Tables {
 		g.writeTableDefinition(&sb, &table)
-		sb.WriteString("\n")
 	}
 
 	return sb.String(), nil
@@ -70,28 +69,52 @@ func (g *MermaidGenerator) writeTableDefinition(sb *strings.Builder, table *mode
 	fmt.Fprintf(sb, "    %s {\n", table.Name)
 
 	for _, col := range table.Columns {
-		columnDef := fmt.Sprintf("        %s %s", col.DataType, col.Name)
+		// Normalize data type for Mermaid compatibility (single words only)
+		normalizedType := g.normalizeDataType(col.DataType)
+		columnDef := fmt.Sprintf("        %s %s", normalizedType, col.Name)
 
-		var constraints []string
-
+		// Only add the most significant constraint to follow Mermaid syntax
+		// Priority: PK > UK (don't add "NOT NULL" as it's not valid Mermaid syntax)
 		if col.IsPrimaryKey {
-			constraints = append(constraints, "PK")
-		}
-
-		if col.IsUnique {
-			constraints = append(constraints, "UK")
-		}
-
-		if !col.IsNullable {
-			constraints = append(constraints, "\"NOT NULL\"")
-		}
-
-		if len(constraints) > 0 {
-			columnDef += " " + strings.Join(constraints, ",")
+			columnDef += " PK"
+		} else if col.IsUnique {
+			columnDef += " UK"
 		}
 
 		sb.WriteString(columnDef + "\n")
 	}
 
-	sb.WriteString("    }")
+	sb.WriteString("    }\n")
+}
+
+// normalizeDataType converts PostgreSQL data types to Mermaid-compatible single words.
+func (g *MermaidGenerator) normalizeDataType(dataType string) string {
+	// Map of PostgreSQL types to Mermaid-friendly equivalents
+	typeMap := map[string]string{
+		"character varying":           "varchar",
+		"timestamp without time zone": "timestamp",
+		"timestamp with time zone":    "timestamptz",
+		"double precision":            "float",
+		"bigint":                      "bigint",
+		"smallint":                    "smallint",
+		"boolean":                     "boolean",
+		"numeric":                     "decimal",
+		"text":                        "text",
+		"integer":                     "integer",
+		"uuid":                        "uuid",
+		"json":                        "json",
+		"jsonb":                       "jsonb",
+	}
+
+	if normalized, exists := typeMap[dataType]; exists {
+		return normalized
+	}
+
+	// For types not in the map, remove spaces and use first word
+	parts := strings.Fields(dataType)
+	if len(parts) > 0 {
+		return parts[0]
+	}
+
+	return dataType
 }

@@ -43,7 +43,16 @@
 - .memory/vision.md: Long-term project vision and principles
 - .memory/tasks.md: Comprehensive task list with descriptions and completion tracking
 
+## User Acceptance Testing
+- uat/docker-compose.yml: PostgreSQL 15 test database configuration with custom test data
+- uat/init/01-setup-database.sql: Comprehensive e-commerce test schema with 5 tables, foreign keys, and sample data
+- uat/test-uat.sh: Automated UAT script validating CLI, database connectivity, schema analysis, and output generation
+- uat/expected-output/sample-db-docs.md: Reference documentation for validation
+- uat/README.md: UAT documentation and usage instructions
+- uat/.gitignore: UAT-specific ignore patterns
+
 ## Directories
 - internal/generator/: Mermaid ER diagram generation with comprehensive test coverage
 - docs/: Additional documentation (empty)
 - tests/: Test files (empty, integration tests planned)
+- uat/: User Acceptance Testing with Docker PostgreSQL

@@ -257,12 +257,12 @@ func (a *SchemaAnalyzer) GetTableRowCounts(ctx context.Context, tables []models.
 
 	query := `
 		SELECT 
-			schemaname || '.' || tablename AS qualified_name,
+			schemaname || '.' || relname AS qualified_name,
 			COALESCE(n_tup_ins - n_tup_del, 0) AS row_count
 		FROM 
 			pg_stat_user_tables 
 		WHERE 
-			schemaname || '.' || tablename = ANY($1)`
+			schemaname || '.' || relname = ANY($1)`
 
 	rows, err := a.conn.db.QueryContext(ctx, query, "{"+strings.Join(tableNames, ",")+"}")
 	if err != nil {

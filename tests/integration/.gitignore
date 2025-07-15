@@ -1,0 +1,6 @@
+# Integration test artifacts
+*.log
+coverage.out
+
+# Docker volumes (if any persist)
+postgres-data/

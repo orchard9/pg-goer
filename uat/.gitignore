@@ -1,0 +1,7 @@
+# UAT generated files
+uat-test-output.md
+schema-filtered-output.md
+*.log
+
+# Docker volumes (if any persist)
+postgres-data/
