@@ -13,7 +13,7 @@ Automatically generate comprehensive PostgreSQL database documentation including
 
 ## Quick Start
 ```bash
-go install github.com/yourusername/pg-goer@latest
+go install github.com/orchard9/pg-goer@latest
 pg-goer "postgresql://localhost/mydb"
 ```
 
@@ -29,14 +29,14 @@ PG Go ER generates a markdown report containing:
 
 ### From Source
 ```bash
-git clone https://github.com/yourusername/pg-goer
+git clone https://github.com/orchard9/pg-goer
 cd pg-goer
 go build -o pg-goer cmd/pg-goer/main.go
 ```
 
 ### Using Go
 ```bash
-go install github.com/yourusername/pg-goer@latest
+go install github.com/orchard9/pg-goer@latest
 ```
 
 ## Requirements
@@ -53,4 +53,4 @@ go install github.com/yourusername/pg-goer@latest
 MIT License. See [LICENSE.md](LICENSE.md) for details.
 
 ## Support
-Report issues at https://github.com/yourusername/pg-goer/issues
+Report issues at https://github.com/orchard9/pg-goer/issues

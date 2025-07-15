@@ -1,9 +1,11 @@
 # Claude Development Guide
 
+Written by world class golang engineers that pride elegant efficiency and delivering a focused product.
+
 ## Memory Management
 
 ### Memory Structure
-The project maintains four memory files in the `.memory/` directory:
+The project maintains five memory files in the `.memory/` directory:
 
 1. **state.md**: Lists every file in the project with a one-line description of its purpose
 2. **working-memory.md**: Tracks work progress
@@ -12,6 +14,7 @@ The project maintains four memory files in the `.memory/` directory:
    - Future: 1-3 lines describing upcoming work
 3. **semantic-memory.md**: Contains simple factual statements about the project
 4. **vision.md**: Defines the stable long-term vision for the project
+5. **tasks.md**: Lists all tasks with 1-3 lines describing what each task is and why it's important
 
 ## How to Handle Coding Task Requests
 
@@ -57,7 +60,7 @@ Apply the 80/20 rule to pressure test:
 
 ### 7. Implement Code
 Write and refine code until:
-- All tests pass
+- All tests pass with "make ci"
 - Code meets quality standards
 - Implementation matches the design
 
@@ -73,3 +76,7 @@ After completing the task:
 - Update working-memory.md with completed work
 - Add new facts to semantic-memory.md if applicable
 - Ensure vision.md remains accurate
+- Update tasks.md: mark task as completed, move it to the bottom, and add notes about:
+  - How it was implemented
+  - What could be improved
+  - Any concerns or regressions to watch for

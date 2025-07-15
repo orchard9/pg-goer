@@ -20,6 +20,7 @@
 - .memory/working-memory.md: Recent, current, and future work tracking
 - .memory/semantic-memory.md: Project facts and characteristics
 - .memory/vision.md: Long-term project vision and principles
+- .memory/tasks.md: Comprehensive task list with descriptions and completion tracking
 
 ## Directories
 - internal/analyzer/: Database schema analysis components (empty)
