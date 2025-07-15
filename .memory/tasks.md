@@ -74,11 +74,15 @@ Enables programmatic consumption of the documentation.
 Configure automated testing and building on every push.
 Maintains quality and provides pre-built binaries.
 
-### 19. Create release process in Makefile
+### 19. Verify GitHub Actions workflow
+Push changes and confirm GitHub Actions runs successfully.
+Critical to ensure CI pipeline works before depending on it for quality gates.
+
+### 20. Create release process in Makefile
 Add make release target for creating versioned binaries.
 Automates the release process for consistency.
 
-### 20. Build and test final binary
+### 21. Build and test final binary
 Final validation of the complete tool with all features.
 Ensure single binary works as designed with no dependencies.
 

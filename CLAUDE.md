@@ -80,3 +80,22 @@ After completing the task:
   - How it was implemented
   - What could be improved
   - Any concerns or regressions to watch for
+
+## Handling "check gh" Command
+
+When the user says "check gh", perform these actions:
+
+1. **Check GitHub Issues**
+   - Use `gh issue list` to see open issues
+   - Look for bug reports, feature requests, or questions
+   - Add any actionable items to tasks.md
+
+2. **Check GitHub Actions**
+   - Use `gh run list` to see recent workflow runs
+   - Look for failed builds or tests
+   - Investigate any failures and add fixes to tasks.md
+
+3. **Update Task List**
+   - Add new tasks for any issues found
+   - Prioritize based on severity (build failures = high priority)
+   - Include issue/run numbers in task descriptions for tracking
