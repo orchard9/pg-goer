@@ -65,9 +65,11 @@ Write and refine code until:
 - Implementation matches the design
 
 ### 8. User Acceptance Testing
-Perform final validation:
-- Test from the user's perspective
-- Verify all requirements are met
+Perform final validation against real-world scenarios:
+- Build the binary with `make build`  
+- Test CLI functionality with `./pg-goer --help` and `./pg-goer --version`
+- Test against actual PostgreSQL database if available
+- Verify all requirements are met from user's perspective
 - Ensure the solution is intuitive and reliable
 
 ### 9. Update Memory

@@ -2,7 +2,7 @@
 
 ## Installation
 ```bash
-go install github.com/yourusername/pg-goer@latest
+go install github.com/orchard9/pg-goer@latest
 ```
 
 ## Basic Usage

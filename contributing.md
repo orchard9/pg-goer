@@ -19,7 +19,7 @@ Be respectful. We're here to build great software together.
 
 ### Development Setup
 ```bash
-git clone https://github.com/yourusername/pg-goer
+git clone https://github.com/orchard9/pg-goer
 cd pg-goer
 go mod download
 go test ./...
