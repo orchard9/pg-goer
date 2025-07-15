@@ -2,10 +2,6 @@
 
 ## Pending Tasks
 
-### 26. Update UAT to generate example outputs in multiple formats
-Modify UAT script to generate example-output.md and example-output.json files.
-Showcases both output formats and provides current examples for users.
-
 ### 27. Add YAML output format support (optional)
 Implement YAML reporter to support third output format.
 Would complement existing markdown and JSON formats for broader tool utility.
@@ -111,3 +107,31 @@ Achieved: Extension analysis critical for deployment planning and compatibility 
 ### 25. Document additional PostgreSQL objects ✓
 Completed schema analysis with views, sequences covering remaining PostgreSQL object types.
 Achieved: Comprehensive database documentation covering all essential schema elements for complete database understanding.
+
+### 26. Update UAT to generate example outputs in multiple formats ✓
+Modified UAT script to generate example-output.md and example-output.json files with enhanced database features.
+Achieved: Comprehensive example files showcasing extensions, triggers, views, sequences, and advanced PostgreSQL features in both formats.
+
+### 34. Fix integration test compilation error ✓
+Updated integration test Schema initialization to include new fields (Views, Sequences, Extensions).
+Achieved: Integration tests compiling and working correctly with enhanced Schema model.
+
+### 35. Fix docker-compose version warnings ✓
+Removed deprecated version attributes from docker-compose.yml files.
+Achieved: Clean docker-compose execution without deprecation warnings.
+
+### 36. Fix Gosec security scanner action configuration ✓
+Updated GitHub Actions to use correct securego/gosec repository instead of non-existent securecodewarrior/gosec.
+Achieved: Security scanning working properly in CI pipeline.
+
+### 37. Enhance example output to show more PostgreSQL features ✓
+Enhanced UAT database setup with extensions, triggers, views, functions, and advanced indexes.
+Achieved: Example output files (7463 bytes markdown, 15413 bytes JSON) showcasing comprehensive PostgreSQL documentation capabilities.
+
+### 38. Add example with extensions, complex triggers, and advanced PostgreSQL features ✓
+Created sophisticated UAT database with audit system, business logic triggers, and PL/pgSQL functions.
+Achieved: Real-world example demonstrating tool's ability to document complex PostgreSQL environments with JSONB, extensions, and advanced features.
+
+### 39. Fix remaining integration test compilation error with schema pointer ✓
+Resolved final GitHub Actions test failures by fixing Schema struct initialization in integration tests.
+Achieved: All GitHub Actions checks passing with proper Schema field initialization.
