@@ -1,16 +1,18 @@
 # Working Memory
 
 ## Recent Work
-- Split UAT commands into reliable, focused components (uat-up, uat-run, uat-down) following core values
-- Created focused scripts: wait-for-postgres.sh for database readiness, run-tests.sh for pure testing logic
-- Implemented elegant separation of concerns: environment setup, testing, and cleanup as distinct operations
+- Enhanced UAT process to generate example outputs in multiple formats (markdown and JSON)
+- Fixed GitHub Actions CI failures including docker-compose updates and security action references
+- Resolved linting issues with hugeParam errors and duplicate code elimination using generic helpers
+- Completed comprehensive PostgreSQL documentation with indexes, triggers, extensions, views, and sequences
 
 ## Current Work
-- UAT system now supports both complete cycles and individual steps for development efficiency
-- All UAT commands tested and working reliably with proper error handling and status reporting
-- Integration test framework completed with comprehensive Docker-based validation
+- Updated UAT script to automatically generate example-output.md and example-output.json during testing
+- Modified Makefile to preserve example output files for user reference after UAT completion
+- Fixed SQL query generation issues in schema analyzer to properly handle WHERE clauses
+- All major features implemented and validated through comprehensive UAT testing
 
 ## Future Work
-- Add Docker-based integration testing framework for continuous validation
-- Implement JSON output format as alternative to markdown
-- Set up GitHub Actions CI pipeline for automated testing and releases
+- Consider adding YAML output format support for third output option
+- Potential performance optimizations for large database schemas
+- Additional PostgreSQL object types (functions, procedures, custom types) if requested
