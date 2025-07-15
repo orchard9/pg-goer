@@ -30,3 +30,5 @@ Thumbs.db
 *.log
 output/
 dist/
+database-docs.md
+test_output.md
