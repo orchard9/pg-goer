@@ -9,15 +9,18 @@ import (
 	"github.com/orchard9/pg-goer/pkg/models"
 )
 
-type SchemaAnalyzer struct {
+type PostgreSQLAnalyzer struct {
 	conn *Connection
 }
 
+// SchemaAnalyzer is a compatibility alias for PostgreSQLAnalyzer
+type SchemaAnalyzer = PostgreSQLAnalyzer
+
 func NewSchemaAnalyzer(conn *Connection) *SchemaAnalyzer {
-	return &SchemaAnalyzer{conn: conn}
+	return &PostgreSQLAnalyzer{conn: conn}
 }
 
-func (a *SchemaAnalyzer) GetTables(ctx context.Context, schemas []string) ([]models.Table, error) {
+func (a *PostgreSQLAnalyzer) GetTables(ctx context.Context, schemas []string) ([]models.Table, error) {
 	query := a.buildTableQuery(schemas)
 
 	return querySchemaObjects(ctx, a.conn.db, query, schemas, func() models.Table { return models.Table{} },
@@ -25,7 +28,7 @@ func (a *SchemaAnalyzer) GetTables(ctx context.Context, schemas []string) ([]mod
 		"tables")
 }
 
-func (a *SchemaAnalyzer) buildTableQuery(schemas []string) string {
+func (a *PostgreSQLAnalyzer) buildTableQuery(schemas []string) string {
 	return a.buildSchemaFilterQuery(
 		`SELECT n.nspname AS schema_name, c.relname AS table_name 
 		 FROM pg_catalog.pg_class c 
@@ -37,7 +40,7 @@ func (a *SchemaAnalyzer) buildTableQuery(schemas []string) string {
 	)
 }
 
-func (a *SchemaAnalyzer) GetColumns(ctx context.Context, table *models.Table) ([]models.Column, error) {
+func (a *PostgreSQLAnalyzer) GetColumns(ctx context.Context, table *models.Table) ([]models.Column, error) {
 	query := `
 		SELECT 
 			c.column_name,
@@ -125,7 +128,7 @@ func (a *SchemaAnalyzer) GetColumns(ctx context.Context, table *models.Table) ([
 	return columns, nil
 }
 
-func (a *SchemaAnalyzer) GetForeignKeys(ctx context.Context, table *models.Table) ([]models.ForeignKey, error) {
+func (a *PostgreSQLAnalyzer) GetForeignKeys(ctx context.Context, table *models.Table) ([]models.ForeignKey, error) {
 	query := `
 		SELECT 
 			tc.constraint_name,
@@ -195,7 +198,7 @@ func (a *SchemaAnalyzer) GetForeignKeys(ctx context.Context, table *models.Table
 	return foreignKeys, nil
 }
 
-func (a *SchemaAnalyzer) GetTableRowCounts(ctx context.Context, tables []models.Table) (map[string]int64, error) {
+func (a *PostgreSQLAnalyzer) GetTableRowCounts(ctx context.Context, tables []models.Table) (map[string]int64, error) {
 	if len(tables) == 0 {
 		return make(map[string]int64), nil
 	}
@@ -250,7 +253,7 @@ func (a *SchemaAnalyzer) GetTableRowCounts(ctx context.Context, tables []models.
 	return rowCounts, nil
 }
 
-func (a *SchemaAnalyzer) GetIndexes(ctx context.Context, table *models.Table) ([]models.Index, error) {
+func (a *PostgreSQLAnalyzer) GetIndexes(ctx context.Context, table *models.Table) ([]models.Index, error) {
 	query := `
 		SELECT DISTINCT
 			i.relname AS index_name,
@@ -326,7 +329,7 @@ func (a *SchemaAnalyzer) GetIndexes(ctx context.Context, table *models.Table) ([
 	return indexes, nil
 }
 
-func (a *SchemaAnalyzer) GetTriggers(ctx context.Context, table *models.Table) ([]models.Trigger, error) {
+func (a *PostgreSQLAnalyzer) GetTriggers(ctx context.Context, table *models.Table) ([]models.Trigger, error) {
 	query := `
 		SELECT 
 			t.tgname AS trigger_name,
@@ -394,7 +397,7 @@ func (a *SchemaAnalyzer) GetTriggers(ctx context.Context, table *models.Table) (
 	return triggers, nil
 }
 
-func (a *SchemaAnalyzer) GetExtensions(ctx context.Context) ([]models.Extension, error) {
+func (a *PostgreSQLAnalyzer) GetExtensions(ctx context.Context) ([]models.Extension, error) {
 	query := `
 		SELECT 
 			e.extname AS extension_name,
@@ -434,7 +437,7 @@ func (a *SchemaAnalyzer) GetExtensions(ctx context.Context) ([]models.Extension,
 	return extensions, nil
 }
 
-func (a *SchemaAnalyzer) GetViews(ctx context.Context, schemas []string) ([]models.View, error) {
+func (a *PostgreSQLAnalyzer) GetViews(ctx context.Context, schemas []string) ([]models.View, error) {
 	query := a.buildViewQuery(schemas)
 
 	return querySchemaObjects(ctx, a.conn.db, query, schemas, func() models.View { return models.View{} },
@@ -442,7 +445,7 @@ func (a *SchemaAnalyzer) GetViews(ctx context.Context, schemas []string) ([]mode
 		"views")
 }
 
-func (a *SchemaAnalyzer) buildViewQuery(schemas []string) string {
+func (a *PostgreSQLAnalyzer) buildViewQuery(schemas []string) string {
 	return a.buildSchemaFilterQuery(
 		`SELECT schemaname AS schema_name, viewname AS view_name FROM pg_catalog.pg_views WHERE true`,
 		"schemaname",
@@ -451,7 +454,7 @@ func (a *SchemaAnalyzer) buildViewQuery(schemas []string) string {
 	)
 }
 
-func (a *SchemaAnalyzer) GetSequences(ctx context.Context, schemas []string) ([]models.Sequence, error) {
+func (a *PostgreSQLAnalyzer) GetSequences(ctx context.Context, schemas []string) ([]models.Sequence, error) {
 	query := a.buildSequenceQuery(schemas)
 	args := make([]interface{}, len(schemas))
 
@@ -515,7 +518,7 @@ func querySchemaObjects[T any](ctx context.Context, db *sql.DB, query string, sc
 	return items, nil
 }
 
-func (a *SchemaAnalyzer) buildSchemaFilterQuery(baseQuery, schemaColumn, orderBy string, schemas []string) string {
+func (a *PostgreSQLAnalyzer) buildSchemaFilterQuery(baseQuery, schemaColumn, orderBy string, schemas []string) string {
 	whereClause := " AND "
 
 	switch len(schemas) {
@@ -535,7 +538,7 @@ func (a *SchemaAnalyzer) buildSchemaFilterQuery(baseQuery, schemaColumn, orderBy
 	return baseQuery + whereClause + fmt.Sprintf(" ORDER BY %s", orderBy)
 }
 
-func (a *SchemaAnalyzer) buildSequenceQuery(schemas []string) string {
+func (a *PostgreSQLAnalyzer) buildSequenceQuery(schemas []string) string {
 	return a.buildSchemaFilterQuery(
 		`SELECT schemaname AS schema_name, sequencename AS sequence_name, data_type, start_value, min_value, max_value, increment_by FROM pg_catalog.pg_sequences WHERE true`,
 		"schemaname",

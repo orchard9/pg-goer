@@ -6,15 +6,32 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/lib/pq" // PostgreSQL driver
+	_ "github.com/go-sql-driver/mysql" // MySQL/MariaDB driver
+	_ "github.com/lib/pq"              // PostgreSQL driver
 )
 
 type Connection struct {
-	db *sql.DB
+	db     *sql.DB
+	dbType DatabaseType
 }
 
 func Connect(ctx context.Context, connectionString string) (*Connection, error) {
-	db, err := sql.Open("postgres", connectionString)
+	// Auto-detect database type
+	dbType, err := DetectDatabaseType(connectionString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect database type: %w", err)
+	}
+
+	return ConnectWithType(ctx, connectionString, dbType)
+}
+
+func ConnectWithType(ctx context.Context, connectionString string, dbType DatabaseType) (*Connection, error) {
+	driver, connStr, err := ParseConnectionString(dbType, connectionString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse connection string: %w", err)
+	}
+
+	db, err := sql.Open(driver, connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
@@ -31,7 +48,7 @@ func Connect(ctx context.Context, connectionString string) (*Connection, error) 
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	return &Connection{db: db}, nil
+	return &Connection{db: db, dbType: dbType}, nil
 }
 
 func (c *Connection) Close() error {
@@ -44,4 +61,8 @@ func (c *Connection) Close() error {
 
 func (c *Connection) DB() *sql.DB {
 	return c.db
+}
+
+func (c *Connection) DatabaseType() DatabaseType {
+	return c.dbType
 }

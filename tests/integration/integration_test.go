@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration
@@ -77,13 +78,13 @@ func TestSchemaAnalysis(t *testing.T) {
 	}
 
 	expectedTables := map[string]bool{
-		"users":                    true,
-		"posts":                    true,
-		"comments":                 true,
-		"categories":               true,
-		"post_categories":          true,
-		"magic_code_rate_limits":   true,
-		"test_multiple_uniques":    true,
+		"users":                  true,
+		"posts":                  true,
+		"comments":               true,
+		"categories":             true,
+		"post_categories":        true,
+		"magic_code_rate_limits": true,
+		"test_multiple_uniques":  true,
 	}
 
 	if len(tables) != len(expectedTables) {
@@ -225,10 +226,10 @@ func TestRowCountAnalysis(t *testing.T) {
 
 	// Verify we have row counts for expected tables
 	expectedRowCounts := map[string]int64{
-		"users":          3,
-		"posts":          3,
-		"comments":       4,
-		"categories":     4,
+		"users":           3,
+		"posts":           3,
+		"comments":        4,
+		"categories":      4,
 		"post_categories": 4,
 	}
 

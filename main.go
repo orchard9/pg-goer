@@ -32,6 +32,7 @@ func main() {
 		output     string
 		format     string
 		schemas    string
+		dbType     string
 		showHelp   bool
 		verbose    bool
 		versionCmd bool
@@ -42,6 +43,7 @@ func main() {
 	flag.StringVar(&format, "format", defaultFormat, "Output format (markdown or json)")
 	flag.StringVar(&format, "f", defaultFormat, "Output format (shorthand)")
 	flag.StringVar(&schemas, "schemas", "", "Comma-separated list of schemas to document")
+	flag.StringVar(&dbType, "database-type", "", "Database type (postgresql or mariadb) - auto-detected if not specified")
 	flag.BoolVar(&showHelp, "help", false, "Show help")
 	flag.BoolVar(&showHelp, "h", false, "Show help (shorthand)")
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose output")
@@ -49,14 +51,21 @@ func main() {
 	flag.BoolVar(&versionCmd, "version", false, "Show version information")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "PG Go ER - PostgreSQL database documentation generator\n\n")
+		fmt.Fprintf(os.Stderr, "Database Go ER - PostgreSQL and MariaDB database documentation generator\n\n")
 		fmt.Fprintf(os.Stderr, "Usage:\n")
 		fmt.Fprintf(os.Stderr, "  pg-goer [flags] <connection-string>\n\n")
 		fmt.Fprintf(os.Stderr, "Flags:\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nExamples:\n")
+		fmt.Fprintf(os.Stderr, "  # PostgreSQL\n")
 		fmt.Fprintf(os.Stderr, "  pg-goer \"postgresql://user:password@localhost/dbname\"\n")
 		fmt.Fprintf(os.Stderr, "  pg-goer -schemas public,custom \"postgresql://localhost/mydb\"\n")
+		fmt.Fprintf(os.Stderr, "  \n")
+		fmt.Fprintf(os.Stderr, "  # MariaDB/MySQL\n")
+		fmt.Fprintf(os.Stderr, "  pg-goer \"mysql://user:password@localhost:3306/dbname\"\n")
+		fmt.Fprintf(os.Stderr, "  pg-goer \"user:password@tcp(localhost:3306)/dbname\"\n")
+		fmt.Fprintf(os.Stderr, "  \n")
+		fmt.Fprintf(os.Stderr, "  # General\n")
 		fmt.Fprintf(os.Stderr, "  pg-goer -format json -output db.json \"postgresql://localhost/mydb\"\n")
 	}
 
@@ -97,13 +106,13 @@ func main() {
 		log.SetOutput(os.Stderr)
 	}
 
-	if err := run(connectionString, output, format, schemaList); err != nil {
+	if err := run(connectionString, output, format, schemaList, dbType); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(connectionString, output, format string, schemas []string) error {
+func run(connectionString, output, format string, schemas []string, dbTypeFlag string) error {
 	// Validate format
 	if format != "markdown" && format != "json" {
 		return fmt.Errorf("invalid format '%s': must be 'markdown' or 'json'", format)
@@ -111,29 +120,29 @@ func run(connectionString, output, format string, schemas []string) error {
 
 	ctx := context.Background()
 
-	conn, schemaAnalyzer, err := connectToDatabase(ctx, connectionString)
+	conn, databaseAnalyzer, err := connectToDatabase(ctx, connectionString, dbTypeFlag)
 	if err != nil {
 		return err
 	}
 
 	defer conn.Close()
 
-	tables, err := fetchAllTableData(ctx, schemaAnalyzer, schemas)
+	tables, err := fetchAllTableData(ctx, databaseAnalyzer, schemas)
 	if err != nil {
 		return err
 	}
 
-	extensions, err := fetchExtensions(ctx, schemaAnalyzer)
+	extensions, err := fetchExtensions(ctx, databaseAnalyzer)
 	if err != nil {
 		return err
 	}
 
-	views, err := fetchViews(ctx, schemaAnalyzer, schemas)
+	views, err := fetchViews(ctx, databaseAnalyzer, schemas)
 	if err != nil {
 		return err
 	}
 
-	sequences, err := fetchSequences(ctx, schemaAnalyzer, schemas)
+	sequences, err := fetchSequences(ctx, databaseAnalyzer, schemas)
 	if err != nil {
 		return err
 	}
@@ -149,42 +158,67 @@ func run(connectionString, output, format string, schemas []string) error {
 	return generateAndWriteDocumentation(&schema, format, output)
 }
 
-func connectToDatabase(ctx context.Context, connectionString string) (*analyzer.Connection, *analyzer.SchemaAnalyzer, error) {
+func connectToDatabase(ctx context.Context, connectionString string, dbTypeFlag string) (*analyzer.Connection, analyzer.DatabaseAnalyzer, error) {
 	log.Println("Connecting to database...")
 
-	conn, err := analyzer.Connect(ctx, connectionString)
+	var conn *analyzer.Connection
+	var err error
+
+	if dbTypeFlag != "" {
+		// Use explicitly specified database type
+		var dbType analyzer.DatabaseType
+		switch strings.ToLower(dbTypeFlag) {
+		case "postgresql", "postgres":
+			dbType = analyzer.PostgreSQL
+		case "mariadb", "mysql":
+			dbType = analyzer.MariaDB
+		default:
+			return nil, nil, fmt.Errorf("unsupported database type: %s", dbTypeFlag)
+		}
+		conn, err = analyzer.ConnectWithType(ctx, connectionString, dbType)
+	} else {
+		// Auto-detect database type
+		conn, err = analyzer.Connect(ctx, connectionString)
+	}
+
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	return conn, analyzer.NewSchemaAnalyzer(conn), nil
+	databaseAnalyzer, err := analyzer.NewDatabaseAnalyzer(conn.DatabaseType(), conn)
+	if err != nil {
+		conn.Close()
+		return nil, nil, fmt.Errorf("failed to create database analyzer: %w", err)
+	}
+
+	return conn, databaseAnalyzer, nil
 }
 
-func fetchAllTableData(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, schemas []string) ([]models.Table, error) {
+func fetchAllTableData(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer, schemas []string) ([]models.Table, error) {
 	log.Println("Fetching tables...")
 
-	tables, err := schemaAnalyzer.GetTables(ctx, schemas)
+	tables, err := databaseAnalyzer.GetTables(ctx, schemas)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tables: %w", err)
 	}
 
 	log.Printf("Found %d tables\n", len(tables))
 
-	if err := enrichTablesWithMetadata(ctx, schemaAnalyzer, tables); err != nil {
+	if err := enrichTablesWithMetadata(ctx, databaseAnalyzer, tables); err != nil {
 		return nil, err
 	}
 
-	if err := addRowCounts(ctx, schemaAnalyzer, tables); err != nil {
+	if err := addRowCounts(ctx, databaseAnalyzer, tables); err != nil {
 		return nil, err
 	}
 
 	return tables, nil
 }
 
-func fetchExtensions(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer) ([]models.Extension, error) {
-	log.Println("Fetching PostgreSQL extensions...")
+func fetchExtensions(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer) ([]models.Extension, error) {
+	log.Println("Fetching database extensions...")
 
-	extensions, err := schemaAnalyzer.GetExtensions(ctx)
+	extensions, err := databaseAnalyzer.GetExtensions(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get extensions: %w", err)
 	}
@@ -192,10 +226,10 @@ func fetchExtensions(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyze
 	return extensions, nil
 }
 
-func fetchViews(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, schemas []string) ([]models.View, error) {
+func fetchViews(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer, schemas []string) ([]models.View, error) {
 	log.Println("Fetching views...")
 
-	views, err := schemaAnalyzer.GetViews(ctx, schemas)
+	views, err := databaseAnalyzer.GetViews(ctx, schemas)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get views: %w", err)
 	}
@@ -203,10 +237,10 @@ func fetchViews(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, sc
 	return views, nil
 }
 
-func fetchSequences(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, schemas []string) ([]models.Sequence, error) {
+func fetchSequences(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer, schemas []string) ([]models.Sequence, error) {
 	log.Println("Fetching sequences...")
 
-	sequences, err := schemaAnalyzer.GetSequences(ctx, schemas)
+	sequences, err := databaseAnalyzer.GetSequences(ctx, schemas)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sequences: %w", err)
 	}
@@ -214,21 +248,21 @@ func fetchSequences(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer
 	return sequences, nil
 }
 
-func enrichTablesWithMetadata(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, tables []models.Table) error {
+func enrichTablesWithMetadata(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer, tables []models.Table) error {
 	for i := range tables {
-		if err := fetchTableColumns(ctx, schemaAnalyzer, &tables[i]); err != nil {
+		if err := fetchTableColumns(ctx, databaseAnalyzer, &tables[i]); err != nil {
 			return err
 		}
 
-		if err := fetchTableForeignKeys(ctx, schemaAnalyzer, &tables[i]); err != nil {
+		if err := fetchTableForeignKeys(ctx, databaseAnalyzer, &tables[i]); err != nil {
 			return err
 		}
 
-		if err := fetchTableIndexes(ctx, schemaAnalyzer, &tables[i]); err != nil {
+		if err := fetchTableIndexes(ctx, databaseAnalyzer, &tables[i]); err != nil {
 			return err
 		}
 
-		if err := fetchTableTriggers(ctx, schemaAnalyzer, &tables[i]); err != nil {
+		if err := fetchTableTriggers(ctx, databaseAnalyzer, &tables[i]); err != nil {
 			return err
 		}
 	}
@@ -236,10 +270,10 @@ func enrichTablesWithMetadata(ctx context.Context, schemaAnalyzer *analyzer.Sche
 	return nil
 }
 
-func fetchTableColumns(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, table *models.Table) error {
+func fetchTableColumns(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer, table *models.Table) error {
 	log.Printf("Fetching columns for %s.%s...\n", table.Schema, table.Name)
 
-	columns, err := schemaAnalyzer.GetColumns(ctx, table)
+	columns, err := databaseAnalyzer.GetColumns(ctx, table)
 	if err != nil {
 		return fmt.Errorf("failed to get columns for %s.%s: %w", table.Schema, table.Name, err)
 	}
@@ -249,10 +283,10 @@ func fetchTableColumns(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnaly
 	return nil
 }
 
-func fetchTableForeignKeys(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, table *models.Table) error {
+func fetchTableForeignKeys(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer, table *models.Table) error {
 	log.Printf("Fetching foreign keys for %s.%s...\n", table.Schema, table.Name)
 
-	foreignKeys, err := schemaAnalyzer.GetForeignKeys(ctx, table)
+	foreignKeys, err := databaseAnalyzer.GetForeignKeys(ctx, table)
 	if err != nil {
 		return fmt.Errorf("failed to get foreign keys for %s.%s: %w", table.Schema, table.Name, err)
 	}
@@ -262,10 +296,10 @@ func fetchTableForeignKeys(ctx context.Context, schemaAnalyzer *analyzer.SchemaA
 	return nil
 }
 
-func fetchTableIndexes(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, table *models.Table) error {
+func fetchTableIndexes(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer, table *models.Table) error {
 	log.Printf("Fetching indexes for %s.%s...\n", table.Schema, table.Name)
 
-	indexes, err := schemaAnalyzer.GetIndexes(ctx, table)
+	indexes, err := databaseAnalyzer.GetIndexes(ctx, table)
 	if err != nil {
 		return fmt.Errorf("failed to get indexes for %s.%s: %w", table.Schema, table.Name, err)
 	}
@@ -275,10 +309,10 @@ func fetchTableIndexes(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnaly
 	return nil
 }
 
-func fetchTableTriggers(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, table *models.Table) error {
+func fetchTableTriggers(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer, table *models.Table) error {
 	log.Printf("Fetching triggers for %s.%s...\n", table.Schema, table.Name)
 
-	triggers, err := schemaAnalyzer.GetTriggers(ctx, table)
+	triggers, err := databaseAnalyzer.GetTriggers(ctx, table)
 	if err != nil {
 		return fmt.Errorf("failed to get triggers for %s.%s: %w", table.Schema, table.Name, err)
 	}
@@ -288,10 +322,10 @@ func fetchTableTriggers(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnal
 	return nil
 }
 
-func addRowCounts(ctx context.Context, schemaAnalyzer *analyzer.SchemaAnalyzer, tables []models.Table) error {
+func addRowCounts(ctx context.Context, databaseAnalyzer analyzer.DatabaseAnalyzer, tables []models.Table) error {
 	log.Println("Fetching table row counts...")
 
-	rowCounts, err := schemaAnalyzer.GetTableRowCounts(ctx, tables)
+	rowCounts, err := databaseAnalyzer.GetTableRowCounts(ctx, tables)
 	if err != nil {
 		return fmt.Errorf("failed to get table row counts: %w", err)
 	}
